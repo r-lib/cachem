@@ -3,3 +3,5 @@
 S3method("$",indexable)
 export(DiskCache)
 export(memoize)
+importFrom(compiler,cmpfun)
+importFrom(digest,digest)

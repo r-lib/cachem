@@ -1,10 +1,15 @@
+
 #' @export
+#' @importFrom digest digest
+#' @importFrom compiler cmpfun
 memoize <- function(f, cache = DiskCache$new()) {
   # f must be forced here to allow code like `g <- memoize(g)` to work.
   # Otherwise it'll try to recurse infinitely on first invocation. Also compile
   # f; otherwise its hash will change on the first two invocations as the
   # compiler keeps count of how many times it has run, and when it compiles it.
-  f <- compiler::cmpfun(f)
+  f <- cmpfun(f)
+  # Hash f here so that we don't have to do it each time the function is called.
+  f_hash <- digest(f, "sha256")
 
   structure(
     function(...) {
@@ -13,9 +18,9 @@ memoize <- function(f, cache = DiskCache$new()) {
       # otherwise, the key could have odd characters that might not work on
       # the filesystem. Hashing is a simple way to guarantee that we'll have
       # a safe filename.
-      args <- list(f, ...)
+      args <- list(f_hash, ...)
 
-      key <- digest::digest(args, "sha256")
+      key <- digest(args, "sha256")
 
       if (cache$has(key)) {
         message("Fetching from cache")
