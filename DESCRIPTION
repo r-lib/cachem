@@ -11,6 +11,7 @@ LazyData: true
 ByteCompile: true
 Imports:
     compiler,
+    digest,
     fastmap,
     R6
 RoxygenNote: 7.1.1
