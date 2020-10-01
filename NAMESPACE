@@ -2,8 +2,12 @@
 
 S3method("$",indexable)
 export(diskCache)
+export(is.key_missing)
+export(key_missing)
 export(memoize)
 export(memoryCache)
 import(R6)
 importFrom(compiler,cmpfun)
 importFrom(digest,digest)
+importFrom(fastmap,is.key_missing)
+importFrom(fastmap,key_missing)
