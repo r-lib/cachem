@@ -4,8 +4,7 @@ Title: What the Package Does (One Line, Title Case)
 Description: What the package does (one paragraph).
 Authors@R: c(
     person("Winston", "Chang", , "winston@rstudio.com", c("aut", "cre")),
-    person(family = "RStudio", role = c("cph", "fnd"))
-)
+    person(family = "RStudio", role = c("cph", "fnd")))
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
