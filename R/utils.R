@@ -1,6 +1,10 @@
-dir_exists <- function(paths) {
-  file.exists(paths) & file.info(paths)$isdir
+hex_digits <- c("0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+                "a", "b", "c", "d", "e", "f")
+
+random_hex <- function(digits = 16) {
+  paste(sample(hex_digits, digits, replace = TRUE), collapse = "")
 }
+
 
 dir_remove <- function(path) {
   for (p in path) {

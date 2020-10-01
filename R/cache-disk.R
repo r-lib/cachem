@@ -317,7 +317,7 @@ DiskCache <- R6Class("DiskCache",
       validate_key(key)
 
       file <- private$key_to_filename(key)
-      temp_file <- paste0(file, "-temp-", createUniqueId(8))
+      temp_file <- paste0(file, "-temp-", random_hex(16))
 
       save_error <- FALSE
       ref_object <- FALSE
