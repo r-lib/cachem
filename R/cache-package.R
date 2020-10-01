@@ -1,3 +1,3 @@
 #' @docType package
-#' @import R6
+#' @import R6 fastmap
 NULL
