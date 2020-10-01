@@ -252,7 +252,7 @@ DiskCache <- R6Class("DiskCache",
       if (!is.numeric(max_age))  stop("max_age must be a number. Use `Inf` for no limit.")
       if (!is.numeric(max_n))    stop("max_n must be a number. Use `Inf` for no limit.")
 
-      if (!dirExists(dir)) {
+      if (!dir.exists(dir)) {
         private$log(paste0("initialize: Creating ", dir))
         dir.create(dir, recursive = TRUE)
       }
@@ -478,7 +478,7 @@ DiskCache <- R6Class("DiskCache",
     },
 
     is_destroyed = function(throw = FALSE) {
-      if (!dirExists(private$dir) ||
+      if (!dir.exists(private$dir) ||
           file.exists(file.path(private$dir, "__destroyed__")))
       {
         # It's possible for another process to destroy a shared cache directory

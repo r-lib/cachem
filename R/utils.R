@@ -4,7 +4,7 @@ dir_exists <- function(paths) {
 
 dir_remove <- function(path) {
   for (p in path) {
-    if (!dir_exists(p)) {
+    if (!dir.exists(p)) {
       stop("Cannot remove non-existent directory ", p, ".")
     }
     if (length(dir(p, all.files = TRUE, no.. = TRUE)) != 0) {
