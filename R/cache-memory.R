@@ -163,6 +163,7 @@ memoryCache <- function(
 }
 
 MemoryCache <- R6Class("MemoryCache",
+  cloneable = FALSE,
   public = list(
     initialize = function(
       max_size = 10 * 1024 ^ 2,

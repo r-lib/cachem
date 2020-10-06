@@ -230,6 +230,7 @@ diskCache <- function(
 
 
 DiskCache <- R6Class("DiskCache",
+  cloneable = FALSE,
   public = list(
     initialize = function(
       dir = NULL,
