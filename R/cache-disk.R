@@ -267,7 +267,12 @@ DiskCache <- R6Class("DiskCache",
       private$exec_missing        <- exec_missing
       private$logfile             <- logfile
 
-      private$prune_last_time     <- as.numeric(Sys.time())
+      # Start the prune throttle counter with a random number from 0-19. This is
+      # so that, in the case where multiple DiskCache objects that point to the
+      # same directory are created and discarded after just a few uses each,
+      # pruning will still occur.
+      private$prune_throttle_counter <- sample.int(20, 1) - 1
+      private$prune_last_time        <- as.numeric(Sys.time())
     },
 
     get = function(key, missing = private$missing, exec_missing = private$exec_missing) {
@@ -514,7 +519,7 @@ DiskCache <- R6Class("DiskCache",
     exec_missing = FALSE,
     logfile = NULL,
 
-    prune_throttle_counter = 0,
+    prune_throttle_counter = NULL,
     prune_last_time = NULL,
 
     key_to_filename = function(key) {
