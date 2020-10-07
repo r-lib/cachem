@@ -31,7 +31,6 @@ absolute_path <- function(path) {
 }
 
 validate_key <- function(key) {
-  if (grepl("[^a-z0-9]", key)) {
-    stop("Invalid key: ", key, ". Only lowercase letters and numbers are allowed.")
-  }
+  # This C function does the same as `grepl("[^a-z0-9]")`, but faster.
+  .Call(C_validate_key, key)
 }
