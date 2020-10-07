@@ -12,14 +12,10 @@ SEXP C_validate_key(SEXP key_r) {
   }
 
   const char* s = R_CHAR(key_c);
-  char c = *s;
-  while (c != 0) {
-    int valid = (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z');
-    if (!valid) {
-      Rf_error("Invalid key: %s. Only lowercase letters and numbers are allowed.", s);
-    }
-    s++;
-    c = *s;
+  char cset[] = "1234567890abcdefghijklmnopqrstuvwxyz";
+  int i = strspn(s, cset);
+  if (i != strlen(s)) {
+    Rf_error("Invalid key: %s. Only lowercase letters and numbers are allowed.", s);
   }
 
   return Rf_ScalarLogical(TRUE);
