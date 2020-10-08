@@ -1,6 +1,6 @@
 #include <R.h>
 #include <Rdefines.h>
-#include <stdio.h>
+#include <string.h>
 
 SEXP C_validate_key(SEXP key_r) {
   if (TYPEOF(key_r) != STRSXP || Rf_length(key_r) != 1) {
