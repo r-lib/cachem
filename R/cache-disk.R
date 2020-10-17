@@ -215,7 +215,7 @@
 #' @export
 diskCache <- function(
   dir = NULL,
-  max_size = 10 * 1024 ^ 2,
+  max_size = 200 * 1024 ^ 2,
   max_age = Inf,
   max_n = Inf,
   evict = c("lru", "fifo"),
@@ -224,352 +224,350 @@ diskCache <- function(
   exec_missing = FALSE,
   logfile = NULL)
 {
-  DiskCache$new(dir, max_size, max_age, max_n, evict, destroy_on_finalize,
-                missing, exec_missing, logfile)
-}
+  # ============================================================================
+  # Logging
+  # ============================================================================
+  # This needs to be defined first, because it's used in initialization.
+  log_ <- function(text) {
+    if (is.null(logfile_)) return()
 
+    text <- paste0(format(Sys.time(), "[%Y-%m-%d %H:%M:%OS3] DiskCache "), text)
+    cat(text, sep = "\n", file = logfile_, append = TRUE)
+  }
 
-DiskCache <- R6Class("DiskCache",
-  cloneable = FALSE,
-  public = list(
-    initialize = function(
-      dir = NULL,
-      max_size = 10 * 1024 ^ 2,
-      max_age = Inf,
-      max_n = Inf,
-      evict = c("lru", "fifo"),
-      destroy_on_finalize = FALSE,
-      missing = key_missing(),
-      exec_missing = FALSE,
-      logfile = NULL)
-    {
-      if (exec_missing && (!is.function(missing) || length(formals(missing)) == 0)) {
-        stop("When `exec_missing` is true, `missing` must be a function that takes one argument.")
-      }
-      if (is.null(dir)) {
-        dir <- tempfile("DiskCache-")
-      }
-      if (!is.numeric(max_size)) stop("max_size must be a number. Use `Inf` for no limit.")
-      if (!is.numeric(max_age))  stop("max_age must be a number. Use `Inf` for no limit.")
-      if (!is.numeric(max_n))    stop("max_n must be a number. Use `Inf` for no limit.")
+  # ============================================================================
+  # Initialization
+  # ============================================================================
+  if (exec_missing && (!is.function(missing) || length(formals(missing)) == 0)) {
+    stop("When `exec_missing` is true, `missing` must be a function that takes one argument.")
+  }
+  if (is.null(dir)) {
+    dir <- tempfile("DiskCache-")
+  }
+  if (!is.numeric(max_size)) stop("max_size must be a number. Use `Inf` for no limit.")
+  if (!is.numeric(max_age))  stop("max_age must be a number. Use `Inf` for no limit.")
+  if (!is.numeric(max_n))    stop("max_n must be a number. Use `Inf` for no limit.")
 
-      if (!dir.exists(dir)) {
-        private$log(paste0("initialize: Creating ", dir))
-        dir.create(dir, recursive = TRUE)
-      }
+  if (!dir.exists(dir)) {
+    # log_(paste0("initialize: Creating ", dir))
+    dir.create(dir, recursive = TRUE)
+  }
 
-      private$dir                 <- normalizePath(dir)
-      private$max_size            <- max_size
-      private$max_age             <- max_age
-      private$max_n               <- max_n
-      private$evict               <- match.arg(evict)
-      private$destroy_on_finalize <- destroy_on_finalize
-      private$missing             <- missing
-      private$exec_missing        <- exec_missing
-      private$logfile             <- logfile
+  logfile_             <- logfile
+  dir_                 <- normalizePath(dir)
+  max_size_            <- max_size
+  max_age_             <- max_age
+  max_n_               <- max_n
+  evict_               <- match.arg(evict)
+  destroy_on_finalize_ <- destroy_on_finalize
+  missing_             <- missing
+  exec_missing_        <- exec_missing
 
-      # Start the prune throttle counter with a random number from 0-19. This is
-      # so that, in the case where multiple DiskCache objects that point to the
-      # same directory are created and discarded after just a few uses each,
-      # pruning will still occur.
-      private$prune_throttle_counter <- sample.int(20, 1) - 1
-      private$prune_last_time        <- as.numeric(Sys.time())
-    },
+  destroyed_           <- FALSE
 
-    get = function(key, missing = private$missing, exec_missing = private$exec_missing) {
-      private$log(paste0('get: key "', key, '"'))
-      self$is_destroyed(throw = TRUE)
-      validate_key(key)
+  # Start the prune throttle counter with a random number from 0-19. This is
+  # so that, in the case where multiple DiskCache objects that point to the
+  # same directory are created and discarded after just a few uses each,
+  # pruning will still occur.
+  prune_throttle_counter_ <- sample.int(20, 1) - 1
+  prune_last_time_        <- as.numeric(Sys.time())
 
-      private$maybe_prune_single(key)
+  # ============================================================================
+  # Public methods
+  # ============================================================================
+  get <- function(key, missing = missing_, exec_missing = exec_missing_) {
+    log_(paste0('get: key "', key, '"'))
+    is_destroyed(throw = TRUE)
+    validate_key(key)
 
-      filename <- private$key_to_filename(key)
+    maybe_prune_single_(key)
 
-      # Instead of calling exists() before fetching the value, just try to
-      # fetch the value. This reduces the risk of a race condition when
-      # multiple processes share a cache.
-      read_error <- FALSE
-      tryCatch(
-        {
-          value <- suppressWarnings(readRDS(filename))
-          if (private$evict == "lru"){
-            Sys.setFileTime(filename, Sys.time())
-          }
-        },
-        error = function(e) {
-          read_error <<- TRUE
-        }
-      )
-      if (read_error) {
-        private$log(paste0('get: key "', key, '" is missing'))
+    filename <- key_to_filename_(key)
 
-        if (exec_missing) {
-          if (!is.function(missing) || length(formals(missing)) == 0) {
-            stop("When `exec_missing` is true, `missing` must be a function that takes one argument.")
-          }
-          return(missing(key))
-        } else {
-          return(missing)
-        }
-      }
-
-      private$log(paste0('get: key "', key, '" found'))
-      value
-    },
-
-    set = function(key, value) {
-      private$log(paste0('set: key "', key, '"'))
-      self$is_destroyed(throw = TRUE)
-      validate_key(key)
-
-      file <- private$key_to_filename(key)
-      temp_file <- paste0(file, "-temp-", random_hex(16))
-
-      save_error <- FALSE
-      ref_object <- FALSE
-      tryCatch(
-        {
-          saveRDS(value, file = temp_file,
-            refhook = function(x) {
-              ref_object <<- TRUE
-              NULL
-            }
-          )
-          file.rename(temp_file, file)
-        },
-        error = function(e) {
-          save_error <<- TRUE
-          # Unlike file.remove(), unlink() does not raise warning if file does
-          # not exist.
-          unlink(temp_file)
-        }
-      )
-      if (save_error) {
-        private$log(paste0('set: key "', key, '" error'))
-        stop('Error setting value for key "', key, '".')
-      }
-      if (ref_object) {
-        private$log(paste0('set: value is a reference object'))
-        warning("A reference object was cached in a serialized format. The restored object may not work as expected.")
-      }
-
-      private$prune_throttled()
-      invisible(self)
-    },
-
-    exists = function(key) {
-      self$is_destroyed(throw = TRUE)
-      validate_key(key)
-      file.exists(private$key_to_filename(key))
-    },
-
-    # Return all keys in the cache
-    keys = function() {
-      self$is_destroyed(throw = TRUE)
-      files <- dir(private$dir, "\\.rds$")
-      sub("\\.rds$", "", files)
-    },
-
-    remove = function(key) {
-      private$log(paste0('remove: key "', key, '"'))
-      self$is_destroyed(throw = TRUE)
-      validate_key(key)
-      # Remove file; use unlink() instead of file.remove() because it won't
-      # warn if the file doesn't exist.
-      unlink(private$key_to_filename(key))
-      invisible(self)
-    },
-
-    reset = function() {
-      private$log(paste0('reset'))
-      self$is_destroyed(throw = TRUE)
-      file.remove(dir(private$dir, "\\.rds$", full.names = TRUE))
-      invisible(self)
-    },
-
-    prune = function() {
-      # TODO: It would be good to add parameters `n` and `size`, so that the
-      # cache can be pruned to `max_n - n` and `max_size - size` before adding
-      # an object. Right now we prune after adding the object, so the cache
-      # can temporarily grow past the limits. The reason we don't do this now
-      # is because it is expensive to find the size of the serialized object
-      # before adding it.
-
-      private$log('prune')
-      self$is_destroyed(throw = TRUE)
-
-      current_time <- Sys.time()
-
-      filenames <- dir(private$dir, "\\.rds$", full.names = TRUE)
-      info <- file.info(filenames)
-      info <- info[info$isdir == FALSE, ]
-      info$name <- rownames(info)
-      rownames(info) <- NULL
-      # Files could be removed between the dir() and file.info() calls. The
-      # entire row for such files will have NA values. Remove those rows.
-      info <- info[!is.na(info$size), ]
-
-      # 1. Remove any files where the age exceeds max age.
-      if (is.finite(private$max_age)) {
-        timediff <- as.numeric(current_time - info$mtime, units = "secs")
-        rm_idx <- timediff > private$max_age
-        if (any(rm_idx)) {
-          private$log(paste0("prune max_age: Removing ", paste(info$name[rm_idx], collapse = ", ")))
-          rm_success <- file.remove(info$name[rm_idx])
-          # This maps rm_success back into the TRUEs in the rm_idx vector.
-          # If (for example) rm_idx is c(F,T,F,T,T) and rm_success is c(T,F,T),
-          # then this line modifies rm_idx to be c(F,T,F,F,T).
-          rm_idx[rm_idx] <- rm_success
-          info <- info[!rm_idx, ]
-        }
-      }
-
-      # Sort objects by priority. The sorting is done in a function which can be
-      # called multiple times but only does the work the first time.
-      info_is_sorted <- FALSE
-      ensure_info_is_sorted <- function() {
-        if (info_is_sorted) return()
-
-        info <<- info[order(info$mtime, decreasing = TRUE), ]
-        info_is_sorted <<- TRUE
-      }
-
-      # 2. Remove files if there are too many.
-      if (is.finite(private$max_n) && nrow(info) > private$max_n) {
-        ensure_info_is_sorted()
-        rm_idx <- seq_len(nrow(info)) > private$max_n
-        private$log(paste0("prune max_n: Removing ", paste(info$name[rm_idx], collapse = ", ")))
-        rm_success <- file.remove(info$name[rm_idx])
-        rm_idx[rm_idx] <- rm_success
-        info <- info[!rm_idx, ]
-      }
-
-      # 3. Remove files if cache is too large.
-      if (is.finite(private$max_size) && sum(info$size) > private$max_size) {
-        ensure_info_is_sorted()
-        cum_size <- cumsum(info$size)
-        rm_idx <- cum_size > private$max_size
-        private$log(paste0("prune max_size: Removing ", paste(info$name[rm_idx], collapse = ", ")))
-        rm_success <- file.remove(info$name[rm_idx])
-        rm_idx[rm_idx] <- rm_success
-        info <- info[!rm_idx, ]
-      }
-
-      private$prune_last_time <- as.numeric(current_time)
-
-      invisible(self)
-    },
-
-    size = function() {
-      self$is_destroyed(throw = TRUE)
-      length(dir(private$dir, "\\.rds$"))
-    },
-
-    destroy = function() {
-      if (self$is_destroyed()) {
-        return(invisible(self))
-      }
-
-      private$log(paste0("destroy: Removing ", private$dir))
-      # First create a sentinel file so that other processes sharing this
-      # cache know that the cache is to be destroyed. This is needed because
-      # the recursive unlink is not atomic: another process can add a file to
-      # the directory after unlink starts removing files but before it removes
-      # the directory, and when that happens, the directory removal will fail.
-      file.create(file.path(private$dir, "__destroyed__"))
-      # Remove all the .rds files. This will not remove the setinel file.
-      file.remove(dir(private$dir, "\\.rds$", full.names = TRUE))
-      # Next remove dir recursively, including sentinel file.
-      unlink(private$dir, recursive = TRUE)
-      private$destroyed <- TRUE
-      invisible(self)
-    },
-
-    is_destroyed = function(throw = FALSE) {
-      if (!dir.exists(private$dir) ||
-          file.exists(file.path(private$dir, "__destroyed__")))
+    # Instead of calling exists() before fetching the value, just try to
+    # fetch the value. This reduces the risk of a race condition when
+    # multiple processes share a cache.
+    read_error <- FALSE
+    tryCatch(
       {
-        # It's possible for another process to destroy a shared cache directory
-        private$destroyed <- TRUE
-      }
-
-      if (throw) {
-        if (private$destroyed) {
-          stop("Attempted to use cache which has been destroyed:\n  ", private$dir)
+        value <- suppressWarnings(readRDS(filename))
+        if (evict_ == "lru"){
+          Sys.setFileTime(filename, Sys.time())
         }
+      },
+      error = function(e) {
+        read_error <<- TRUE
+      }
+    )
+    if (read_error) {
+      log_(paste0('get: key "', key, '" is missing'))
 
+      if (exec_missing) {
+        if (!is.function(missing) || length(formals(missing)) == 0) {
+          stop("When `exec_missing` is true, `missing` must be a function that takes one argument.")
+        }
+        return(missing(key))
       } else {
-        private$destroyed
-      }
-    },
-
-    finalize = function() {
-      if (private$destroy_on_finalize) {
-        self$destroy()
+        return(missing)
       }
     }
-  ),
 
-  private = list(
-    dir = NULL,
-    max_age = NULL,
-    max_size = NULL,
-    max_n = NULL,
-    evict = NULL,
-    destroy_on_finalize = NULL,
-    destroyed = FALSE,
-    missing = NULL,
-    exec_missing = FALSE,
-    logfile = NULL,
+    log_(paste0('get: key "', key, '" found'))
+    value
+  }
 
-    prune_throttle_counter = NULL,
-    prune_last_time = NULL,
+  set <- function(key, value) {
+    log_(paste0('set: key "', key, '"'))
+    is_destroyed(throw = TRUE)
+    validate_key(key)
 
-    key_to_filename = function(key) {
-      validate_key(key)
-      # Additional validation. This 80-char limit is arbitrary, and is
-      # intended to avoid hitting a filename length limit on Windows.
-      if (nchar(key) > 80) {
-        stop("Invalid key: key must have fewer than 80 characters.")
-      }
-      file.path(private$dir, paste0(key, ".rds"))
-    },
+    file <- key_to_filename_(key)
+    temp_file <- paste0(file, "-temp-", random_hex(16))
 
-    # A wrapper for prune() that throttles it, because prune() can be
-    # expensive due to filesystem operations. This function will prune only
-    # once every 20 times it is called, or if it has been more than 5 seconds
-    # since the last time the cache was actually pruned, whichever is first.
-    # In the future, the behavior may be customizable.
-    prune_throttled = function() {
-      # Count the number of times prune() has been called.
-      private$prune_throttle_counter <- private$prune_throttle_counter + 1
-
-      if (private$prune_throttle_counter > 20 ||
-          private$prune_last_time - as.numeric(Sys.time()) > 5)
+    save_error <- FALSE
+    ref_object <- FALSE
+    tryCatch(
       {
-        self$prune()
-        private$prune_throttle_counter <- 0
+        saveRDS(value, file = temp_file,
+          refhook = function(x) {
+            ref_object <<- TRUE
+            NULL
+          }
+        )
+        file.rename(temp_file, file)
+      },
+      error = function(e) {
+        save_error <<- TRUE
+        # Unlike file.remove(), unlink() does not raise warning if file does
+        # not exist.
+        unlink(temp_file)
       }
-    },
-
-    # Prunes a single object if it exceeds max_age. If the object does not
-    # exceed max_age, or if the object doesn't exist, do nothing.
-    maybe_prune_single = function(key) {
-      obj <- private$cache[[key]]
-      if (is.null(obj)) return()
-
-      timediff <- as.numeric(Sys.time()) - obj$mtime
-      if (timediff > private$max_age) {
-        private$log(paste0("pruning single object exceeding max_age: Removing ", key))
-        rm(list = key, envir = private$cache)
-      }
-    },
-
-    log = function(text) {
-      if (is.null(private$logfile)) return()
-
-      text <- paste0(format(Sys.time(), "[%Y-%m-%d %H:%M:%OS3] DiskCache "), text)
-      cat(text, sep = "\n", file = private$logfile, append = TRUE)
+    )
+    if (save_error) {
+      log_(paste0('set: key "', key, '" error'))
+      stop('Error setting value for key "', key, '".')
     }
+    if (ref_object) {
+      log_(paste0('set: value is a reference object'))
+      warning("A reference object was cached in a serialized format. The restored object may not work as expected.")
+    }
+
+    prune_throttled_()
+    invisible(TRUE)
+  }
+
+  exists <- function(key) {
+    is_destroyed(throw = TRUE)
+    validate_key(key)
+    file.exists(key_to_filename_(key))
+  }
+
+  # Return all keys in the cache
+  keys <- function() {
+    is_destroyed(throw = TRUE)
+    files <- dir(dir_, "\\.rds$")
+    sub("\\.rds$", "", files)
+  }
+
+  remove <- function(key) {
+    log_(paste0('remove: key "', key, '"'))
+    is_destroyed(throw = TRUE)
+    validate_key(key)
+    # Remove file; use unlink() instead of file.remove() because it won't
+    # warn if the file doesn't exist.
+    unlink(key_to_filename_(key))
+    invisible(TRUE)
+  }
+
+  reset <- function() {
+    log_(paste0('reset'))
+    is_destroyed(throw = TRUE)
+    file.remove(dir(dir_, "\\.rds$", full.names = TRUE))
+    invisible(TRUE)
+  }
+
+  prune <- function() {
+    # TODO: It would be good to add parameters `n` and `size`, so that the
+    # cache can be pruned to `max_n - n` and `max_size - size` before adding
+    # an object. Right now we prune after adding the object, so the cache
+    # can temporarily grow past the limits. The reason we don't do this now
+    # is because it is expensive to find the size of the serialized object
+    # before adding it.
+
+    log_('prune')
+    is_destroyed(throw = TRUE)
+
+    current_time <- Sys.time()
+
+    filenames <- dir(dir_, "\\.rds$", full.names = TRUE)
+    info <- file.info(filenames, extra_cols = FALSE)
+    info <- info[info$isdir == FALSE, ]
+    info$name <- rownames(info)
+    rownames(info) <- NULL
+    # Files could be removed between the dir() and file.info() calls. The
+    # entire row for such files will have NA values. Remove those rows.
+    info <- info[!is.na(info$size), ]
+
+    # 1. Remove any files where the age exceeds max age.
+    if (is.finite(max_age_)) {
+      timediff <- as.numeric(current_time - info$mtime, units = "secs")
+      rm_idx <- timediff > max_age_
+      if (any(rm_idx)) {
+        log_(paste0("prune max_age: Removing ", paste(info$name[rm_idx], collapse = ", ")))
+        rm_success <- file.remove(info$name[rm_idx])
+        # This maps rm_success back into the TRUEs in the rm_idx vector.
+        # If (for example) rm_idx is c(F,T,F,T,T) and rm_success is c(T,F,T),
+        # then this line modifies rm_idx to be c(F,T,F,F,T).
+        rm_idx[rm_idx] <- rm_success
+        info <- info[!rm_idx, ]
+      }
+    }
+
+    # Sort objects by priority. The sorting is done in a function which can be
+    # called multiple times but only does the work the first time.
+    info_is_sorted <- FALSE
+    ensure_info_is_sorted <- function() {
+      if (info_is_sorted) return()
+
+      info <<- info[order(info$mtime, decreasing = TRUE), ]
+      info_is_sorted <<- TRUE
+    }
+
+    # 2. Remove files if there are too many.
+    if (is.finite(max_n_) && nrow(info) > max_n_) {
+      ensure_info_is_sorted()
+      rm_idx <- seq_len(nrow(info)) > max_n_
+      log_(paste0("prune max_n: Removing ", paste(info$name[rm_idx], collapse = ", ")))
+      rm_success <- file.remove(info$name[rm_idx])
+      rm_idx[rm_idx] <- rm_success
+      info <- info[!rm_idx, ]
+    }
+
+    # 3. Remove files if cache is too large.
+    if (is.finite(max_size_) && sum(info$size) > max_size_) {
+      ensure_info_is_sorted()
+      cum_size <- cumsum(info$size)
+      rm_idx <- cum_size > max_size_
+      log_(paste0("prune max_size: Removing ", paste(info$name[rm_idx], collapse = ", ")))
+      rm_success <- file.remove(info$name[rm_idx])
+      rm_idx[rm_idx] <- rm_success
+      info <- info[!rm_idx, ]
+    }
+
+    prune_last_time_ <- as.numeric(current_time)
+
+    invisible(TRUE)
+  }
+
+  size <- function() {
+    is_destroyed(throw = TRUE)
+    length(dir(dir_, "\\.rds$"))
+  }
+
+  destroy <- function() {
+    if (is_destroyed()) {
+      return(invisible(FALSE))
+    }
+
+    log_(paste0("destroy: Removing ", dir_))
+    # First create a sentinel file so that other processes sharing this
+    # cache know that the cache is to be destroyed. This is needed because
+    # the recursive unlink is not atomic: another process can add a file to
+    # the directory after unlink starts removing files but before it removes
+    # the directory, and when that happens, the directory removal will fail.
+    file.create(file.path(dir_, "__destroyed__"))
+    # Remove all the .rds files. This will not remove the setinel file.
+    file.remove(dir(dir_, "\\.rds$", full.names = TRUE))
+    # Next remove dir recursively, including sentinel file.
+    unlink(dir_, recursive = TRUE)
+    destroyed_ <- TRUE
+    invisible(TRUE)
+  }
+
+  is_destroyed <- function(throw = FALSE) {
+    if (!dir.exists(dir_) ||
+        file.exists(file.path(dir_, "__destroyed__")))
+    {
+      # It's possible for another process to destroy a shared cache directory
+      destroyed_ <- TRUE
+    }
+
+    if (throw) {
+      if (destroyed_) {
+        stop("Attempted to use cache which has been destroyed:\n  ", dir_)
+      }
+
+    } else {
+      destroyed_
+    }
+  }
+
+  finalize <- function() {
+    if (destroy_on_finalize_) {
+      destroy()
+    }
+  }
+
+  # ============================================================================
+  # Private methods
+  # ============================================================================
+  key_to_filename_ <- function(key) {
+    validate_key(key)
+    # Additional validation. This 80-char limit is arbitrary, and is
+    # intended to avoid hitting a filename length limit on Windows.
+    if (nchar(key) > 80) {
+      stop("Invalid key: key must have fewer than 80 characters.")
+    }
+    file.path(dir_, paste0(key, ".rds"))
+  }
+
+  # A wrapper for prune() that throttles it, because prune() can be
+  # expensive due to filesystem operations. This function will prune only
+  # once every 20 times it is called, or if it has been more than 5 seconds
+  # since the last time the cache was actually pruned, whichever is first.
+  # In the future, the behavior may be customizable.
+  prune_throttled_ <- function() {
+    # Count the number of times prune() has been called.
+    prune_throttle_counter_ <- prune_throttle_counter_ + 1
+
+    if (prune_throttle_counter_ > 20 ||
+        prune_last_time_ - as.numeric(Sys.time()) > 5)
+    {
+      prune()
+      prune_throttle_counter_ <- 0
+    }
+  }
+
+  # Prunes a single object if it exceeds max_age. If the object does not
+  # exceed max_age, or if the object doesn't exist, do nothing.
+  maybe_prune_single_ <- function(key) {
+    # obj <- cache_[[key]]
+    # if (is.null(obj)) return()
+    filepath <- file.path(dir_, paste0(key, ".rds"))
+    info <- file.info(filepath, extra_cols = FALSE)
+    if (is.na(info$mtime)) return()
+
+    timediff <- as.numeric(Sys.time()) - as.numeric(info$mtime)
+    if (timediff > max_age_) {
+      log_(paste0("pruning single object exceeding max_age: Removing ", key))
+      unlink(filepath)
+    }
+  }
+
+  # ============================================================================
+  # Returned object
+  # ============================================================================
+  structure(
+    list(
+      get = get,
+      set = set,
+      exists = exists,
+      keys = keys,
+      remove = remove,
+      reset = reset,
+      prune = prune,
+      size = size
+    ),
+    class = "diskCache"
   )
-)
+}

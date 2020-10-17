@@ -149,9 +149,10 @@
 #'
 #' @inheritParams diskCache
 #'
+#' @importFrom utils object.size
 #' @export
 memoryCache <- function(
-  max_size = 10 * 1024 ^ 2,
+  max_size = 100 * 1024 ^ 2,
   max_age = Inf,
   max_n = Inf,
   evict = c("lru", "fifo"),
@@ -159,208 +160,207 @@ memoryCache <- function(
   exec_missing = FALSE,
   logfile = NULL)
 {
-  MemoryCache$new(max_size, max_age, max_n, evict, missing, exec_missing, logfile)
-}
+  # ============================================================================
+  # Initialization
+  # ============================================================================
+  if (exec_missing && (!is.function(missing) || length(formals(missing)) == 0)) {
+    stop("When `exec_missing` is true, `missing` must be a function that takes one argument.")
+  }
+  if (!is.numeric(max_size)) stop("max_size must be a number. Use `Inf` for no limit.")
+  if (!is.numeric(max_age))  stop("max_age must be a number. Use `Inf` for no limit.")
+  if (!is.numeric(max_n))    stop("max_n must be a number. Use `Inf` for no limit.")
+  cache_        <- fastmap()
+  max_size_     <- max_size
+  max_age_      <- max_age
+  max_n_        <- max_n
+  evict_        <- match.arg(evict)
+  missing_      <- missing
+  exec_missing_ <- exec_missing
+  logfile_      <- logfile
 
-MemoryCache <- R6Class("MemoryCache",
-  cloneable = FALSE,
-  public = list(
-    initialize = function(
-      max_size = 10 * 1024 ^ 2,
-      max_age = Inf,
-      max_n = Inf,
-      evict = c("lru", "fifo"),
-      missing = key_missing(),
-      exec_missing = FALSE,
-      logfile = NULL)
-    {
-      if (exec_missing && (!is.function(missing) || length(formals(missing)) == 0)) {
-        stop("When `exec_missing` is true, `missing` must be a function that takes one argument.")
-      }
-      if (!is.numeric(max_size)) stop("max_size must be a number. Use `Inf` for no limit.")
-      if (!is.numeric(max_age))  stop("max_age must be a number. Use `Inf` for no limit.")
-      if (!is.numeric(max_n))    stop("max_n must be a number. Use `Inf` for no limit.")
-      private$cache        <- fastmap()
-      private$max_size     <- max_size
-      private$max_age      <- max_age
-      private$max_n        <- max_n
-      private$evict        <- match.arg(evict)
-      private$missing      <- missing
-      private$exec_missing <- exec_missing
-      private$logfile      <- logfile
-    },
+  # ============================================================================
+  # Public methods
+  # ============================================================================
+  get <- function(key, missing = missing_, exec_missing = exec_missing_) {
+    log_(paste0('get: key "', key, '"'))
+    validate_key(key)
 
-    get = function(key, missing = private$missing, exec_missing = private$exec_missing) {
-      private$log(paste0('get: key "', key, '"'))
-      validate_key(key)
+    maybe_prune_single_(key)
 
-      private$maybe_prune_single(key)
-
-      if (!self$exists(key)) {
-        private$log(paste0('get: key "', key, '" is missing'))
-        if (exec_missing) {
-          if (!is.function(missing) || length(formals(missing)) == 0) {
-            stop("When `exec_missing` is true, `missing` must be a function that takes one argument.")
-          }
-          return(missing(key))
-        } else {
-          return(missing)
+    if (!exists(key)) {
+      log_(paste0('get: key "', key, '" is missing'))
+      if (exec_missing) {
+        if (!is.function(missing) || length(formals(missing)) == 0) {
+          stop("When `exec_missing` is true, `missing` must be a function that takes one argument.")
         }
-      }
-
-      private$log(paste0('get: key "', key, '" found'))
-      value <- private$cache$get(key)$value
-      value
-    },
-
-    set = function(key, value) {
-      private$log(paste0('set: key "', key, '"'))
-      validate_key(key)
-
-      time <- as.numeric(Sys.time())
-
-      # Only record size if we're actually using max_size for pruning.
-      if (is.finite(private$max_size)) {
-        # Reported size is rough! See ?object.size.
-        size <- as.numeric(object.size(value))
+        return(missing(key))
       } else {
-        size <- NULL
+        return(missing)
       }
+    }
 
-      private$cache$set(key, list(
-        key = key,
-        value = value,
-        size = size,
-        mtime = time,
-        atime = time
-      ))
-      self$prune()
-      invisible(self)
-    },
+    log_(paste0('get: key "', key, '" found'))
+    value <- cache_$get(key)$value
+    value
+  }
 
-    exists = function(key) {
-      validate_key(key)
-      private$cache$has(key)
-    },
+  set <- function(key, value) {
+    log_(paste0('set: key "', key, '"'))
+    validate_key(key)
 
-    keys = function() {
-      private$cache$keys()
-    },
+    time <- as.numeric(Sys.time())
 
-    remove = function(key) {
-      private$log(paste0('remove: key "', key, '"'))
-      validate_key(key)
-      private$cache$remove(key)
-      invisible(self)
-    },
+    # Only record size if we're actually using max_size for pruning.
+    if (is.finite(max_size_)) {
+      # Reported size is rough! See ?object.size.
+      size <- as.numeric(object.size(value))
+    } else {
+      size <- NULL
+    }
 
-    reset = function() {
-      private$log(paste0('reset'))
-      private$cache$reset()
-      invisible(self)
-    },
+    cache_$set(key, list(
+      key = key,
+      value = value,
+      size = size,
+      mtime = time,
+      atime = time
+    ))
+    prune()
+    invisible(TRUE)
+  }
 
-    prune = function() {
-      private$log(paste0('prune'))
-      info <- private$object_info()
+  exists <- function(key) {
+    validate_key(key)
+    cache_$has(key)
+  }
 
-      # 1. Remove any objects where the age exceeds max age.
-      if (is.finite(private$max_age)) {
-        time <- as.numeric(Sys.time())
-        timediff <- time - info$mtime
-        rm_idx <- timediff > private$max_age
-        if (any(rm_idx)) {
-          private$log(paste0("prune max_age: Removing ", paste(info$key[rm_idx], collapse = ", ")))
-          private$cache$remove(info$key[rm_idx])
-          info <- info[!rm_idx, ]
-        }
-      }
+  keys <- function() {
+    cache_$keys()
+  }
 
-      # Sort objects by priority, according to eviction policy. The sorting is
-      # done in a function which can be called multiple times but only does
-      # the work the first time.
-      info_is_sorted <- FALSE
-      ensure_info_is_sorted <- function() {
-        if (info_is_sorted) return()
+  remove <- function(key) {
+    log_(paste0('remove: key "', key, '"'))
+    validate_key(key)
+    cache_$remove(key)
+    invisible(TRUE)
+  }
 
-        if (private$evict == "lru") {
-          info <<- info[order(info$atime, decreasing = TRUE), ]
-        } else if (private$evict == "fifo") {
-          info <<- info[order(info$mtime, decreasing = TRUE), ]
-        } else {
-          stop('Unknown eviction policy "', private$evict, '"')
-        }
-        info_is_sorted <<- TRUE
-      }
+  reset <- function() {
+    log_(paste0('reset'))
+    cache_$reset()
+    invisible(TRUE)
+  }
 
-      # 2. Remove objects if there are too many.
-      if (is.finite(private$max_n) && nrow(info) > private$max_n) {
-        ensure_info_is_sorted()
-        rm_idx <- seq_len(nrow(info)) > private$max_n
-        private$log(paste0("prune max_n: Removing ", paste(info$key[rm_idx], collapse = ", ")))
-        private$cache$remove(info$key[rm_idx])
+  prune <- function() {
+    log_(paste0('prune'))
+    info <- object_info_()
+
+    # 1. Remove any objects where the age exceeds max age.
+    if (is.finite(max_age_)) {
+      time <- as.numeric(Sys.time())
+      timediff <- time - info$mtime
+      rm_idx <- timediff > max_age_
+      if (any(rm_idx)) {
+        log_(paste0("prune max_age: Removing ", paste(info$key[rm_idx], collapse = ", ")))
+        cache_$remove(info$key[rm_idx])
         info <- info[!rm_idx, ]
       }
-
-      # 3. Remove objects if cache is too large.
-      if (is.finite(private$max_size) && sum(info$size) > private$max_size) {
-        ensure_info_is_sorted()
-        cum_size <- cumsum(info$size)
-        rm_idx <- cum_size > private$max_size
-        private$log(paste0("prune max_size: Removing ", paste(info$key[rm_idx], collapse = ", ")))
-        private$cache$remove(info$key[rm_idx])
-        info <- info[!rm_idx, ]
-      }
-
-      invisible(self)
-    },
-
-    size = function() {
-      length(self$keys())
     }
-  ),
 
-  private = list(
-    cache = NULL,
-    max_age = NULL,
-    max_size = NULL,
-    max_n = NULL,
-    evict = NULL,
-    missing = NULL,
-    exec_missing = NULL,
-    logfile = NULL,
+    # Sort objects by priority, according to eviction policy. The sorting is
+    # done in a function which can be called multiple times but only does
+    # the work the first time.
+    info_is_sorted <- FALSE
+    ensure_info_is_sorted <- function() {
+      if (info_is_sorted) return()
 
-    # Prunes a single object if it exceeds max_age. If the object does not
-    # exceed max_age, or if the object doesn't exist, do nothing.
-    maybe_prune_single = function(key) {
-      if (!is.finite(private$max_age)) return()
-
-      obj <- private$cache$get(key)
-      if (is.null(obj)) return()
-
-      timediff <- as.numeric(Sys.time()) - obj$mtime
-      if (timediff > private$max_age) {
-        private$log(paste0("pruning single object exceeding max_age: Removing ", key))
-        private$cache$remove(key)
+      if (evict_ == "lru") {
+        info <<- info[order(info$atime, decreasing = TRUE), ]
+      } else if (evict_ == "fifo") {
+        info <<- info[order(info$mtime, decreasing = TRUE), ]
+      } else {
+        stop('Unknown eviction policy "', evict_, '"')
       }
-    },
-
-    object_info = function() {
-      keys <- private$cache$keys()
-      data.frame(
-        key   = keys,
-        size  = vapply(keys, function(key) private$cache$get(key)$size,  0),
-        mtime = vapply(keys, function(key) private$cache$get(key)$mtime, 0),
-        atime = vapply(keys, function(key) private$cache$get(key)$atime, 0),
-        stringsAsFactors = FALSE
-      )
-    },
-
-    log = function(text) {
-      if (is.null(private$logfile)) return()
-
-      text <- paste0(format(Sys.time(), "[%Y-%m-%d %H:%M:%OS3] MemoryCache "), text)
-      cat(text, sep = "\n", file = private$logfile, append = TRUE)
+      info_is_sorted <<- TRUE
     }
+
+    # 2. Remove objects if there are too many.
+    if (is.finite(max_n_) && nrow(info) > max_n_) {
+      ensure_info_is_sorted()
+      rm_idx <- seq_len(nrow(info)) > max_n_
+      log_(paste0("prune max_n: Removing ", paste(info$key[rm_idx], collapse = ", ")))
+      cache_$remove(info$key[rm_idx])
+      info <- info[!rm_idx, ]
+    }
+
+    # 3. Remove objects if cache is too large.
+    if (is.finite(max_size_) && sum(info$size) > max_size_) {
+      ensure_info_is_sorted()
+      cum_size <- cumsum(info$size)
+      rm_idx <- cum_size > max_size_
+      log_(paste0("prune max_size: Removing ", paste(info$key[rm_idx], collapse = ", ")))
+      cache_$remove(info$key[rm_idx])
+      info <- info[!rm_idx, ]
+    }
+
+    invisible(TRUE)
+  }
+
+  size <- function() {
+    cache_$size()
+  }
+
+  # ============================================================================
+  # Private methods
+  # ============================================================================
+
+  # Prunes a single object if it exceeds max_age. If the object does not
+  # exceed max_age, or if the object doesn't exist, do nothing.
+  maybe_prune_single_ <- function(key) {
+    if (!is.finite(max_age_)) return()
+
+    obj <- cache_$get(key)
+    if (is.null(obj)) return()
+
+    timediff <- as.numeric(Sys.time()) - obj$mtime
+    if (timediff > max_age_) {
+      log_(paste0("pruning single object exceeding max_age: Removing ", key))
+      cache_$remove(key)
+    }
+  }
+
+  object_info_ = function() {
+    keys <- cache_$keys()
+    data.frame(
+      key   = keys,
+      size  = vapply(keys, function(key) cache_$get(key)$size,  0),
+      mtime = vapply(keys, function(key) cache_$get(key)$mtime, 0),
+      atime = vapply(keys, function(key) cache_$get(key)$atime, 0),
+      stringsAsFactors = FALSE
+    )
+  }
+
+  log_ <- function(text) {
+    if (is.null(logfile_)) return()
+
+    text <- paste0(format(Sys.time(), "[%Y-%m-%d %H:%M:%OS3] MemoryCache "), text)
+    cat(text, sep = "\n", file = logfile_, append = TRUE)
+  }
+
+  # ============================================================================
+  # Returned object
+  # ============================================================================
+  structure(
+    list(
+      get = get,
+      set = set,
+      exists = exists,
+      keys = keys,
+      remove = remove,
+      reset = reset,
+      prune = prune,
+      size = size
+    ),
+    class = "memoryCache"
   )
-)
+}

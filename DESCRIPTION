@@ -10,8 +10,7 @@ Encoding: UTF-8
 LazyData: true
 ByteCompile: true
 Imports:
-    fastmap,
-    R6
+    fastmap
 RoxygenNote: 7.1.1
 Suggests:
     testthat
