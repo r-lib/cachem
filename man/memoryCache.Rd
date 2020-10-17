@@ -45,7 +45,8 @@ as a value to return when `get()` results in a cache miss. If
 `get()` results in a cache miss.}
 
 \item{logfile}{An optional filename or connection object to where logging
-information will be written. To log to the console, use `stdout()`.}
+information will be written. To log to the console, use `stderr()` or
+`stdout()`.}
 }
 \description{
 A memory cache object is a key-value store that saves the values in an

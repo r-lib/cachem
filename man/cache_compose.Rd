@@ -4,10 +4,14 @@
 \alias{cache_compose}
 \title{Compose any number of cache objects into a new, layered cache object}
 \usage{
-cache_compose(...)
+cache_compose(..., logfile = NULL)
 }
 \arguments{
 \item{...}{Cache objects to compose into a new, layered cache object.}
+
+\item{logfile}{An optional filename or connection object to where logging
+information will be written. To log to the console, use `stderr()` or
+`stdout()`.}
 }
 \description{
 Compose any number of cache objects into a new, layered cache object

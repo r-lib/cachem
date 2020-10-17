@@ -210,7 +210,8 @@
 #'   `TRUE`, treat `missing` as a function to execute when
 #'   `get()` results in a cache miss.
 #' @param logfile An optional filename or connection object to where logging
-#'   information will be written. To log to the console, use `stdout()`.
+#'   information will be written. To log to the console, use `stderr()` or
+#'   `stdout()`.
 #'
 #' @export
 diskCache <- function(
