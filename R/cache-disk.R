@@ -374,7 +374,9 @@ DiskCache <- R6Class("DiskCache",
       private$log(paste0('remove: key "', key, '"'))
       self$is_destroyed(throw = TRUE)
       validate_key(key)
-      file.remove(private$key_to_filename(key))
+      # Remove file; use unlink() instead of file.remove() because it won't
+      # warn if the file doesn't exist.
+      unlink(private$key_to_filename(key))
       invisible(self)
     },
 
