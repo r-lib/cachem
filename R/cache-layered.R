@@ -1,10 +1,10 @@
 #' Compose any number of cache objects into a new, layered cache object
 #'
 #' @param ... Cache objects to compose into a new, layered cache object.
-#' @inheritParams diskCache
+#' @inheritParams cache_disk
 #'
 #' @export
-cache_compose <- function(..., logfile = NULL) {
+cache_layered <- function(..., logfile = NULL) {
   caches <- list(...)
   logfile_ <- logfile
 
@@ -15,7 +15,7 @@ cache_compose <- function(..., logfile = NULL) {
   log_ <- function(text) {
     if (is.null(logfile_)) return()
 
-    text <- paste0(format(Sys.time(), "[%Y-%m-%d %H:%M:%OS3] composedCache "), text)
+    text <- paste0(format(Sys.time(), "[%Y-%m-%d %H:%M:%OS3] cache_layered "), text)
     cat(text, sep = "\n", file = logfile_, append = TRUE)
   }
 
@@ -88,7 +88,7 @@ cache_compose <- function(..., logfile = NULL) {
       reset = reset,
       get_caches = get_caches
     ),
-    class = "composedCache"
+    class = "cache_layered"
   )
 }
 

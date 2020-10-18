@@ -2,53 +2,51 @@
 #'
 #' A memory cache object is a key-value store that saves the values in an
 #' environment. Objects can be stored and retrieved using the `get()` and
-#' `set()` methods. Objects are automatically pruned from the cache
-#' according to the parameters `max_size`, `max_age`, `max_n`,
-#' and `evict`.
+#' `set()` methods. Objects are automatically pruned from the cache according to
+#' the parameters `max_size`, `max_age`, `max_n`, and `evict`.
 #'
-#' In a `MemoryCache`, R objects are stored directly in the cache; they are
-#' not *not* serialized before being stored in the cache. This contrasts
-#' with other cache types, like [diskCache()], where objects are
-#' serialized, and the serialized object is cached. This can result in some
-#' differences of behavior. For example, as long as an object is stored in a
-#' MemoryCache, it will not be garbage collected.
-#'
+#' In a `cache_mem`, R objects are stored directly in the cache; they are not
+#' *not* serialized before being stored in the cache. This contrasts with other
+#' cache types, like [cache_disk()], where objects are serialized, and the
+#' serialized object is cached. This can result in some differences of behavior.
+#' For example, as long as an object is stored in a cache_mem, it will not be
+#' garbage collected.
 #'
 #' @section Missing keys:
-#'   The `missing` and `exec_missing` parameters controls what happens
-#'   when `get()` is called with a key that is not in the cache (a cache
-#'   miss). The default behavior is to return a [key_missing()]
-#'   object. This is a *sentinel value* that indicates that the key was not
-#'   present in the cache. You can test if the returned value represents a
-#'   missing key by using the [is.key_missing()] function. You can
-#'   also have `get()` return a different sentinel value, like `NULL`.
-#'   If you want to throw an error on a cache miss, you can do so by providing a
-#'   function for `missing` that takes one argument, the key, and also use
-#'   `exec_missing=TRUE`.
 #'
-#'   When the cache is created, you can supply a value for `missing`, which
-#'   sets the default value to be returned for missing values. It can also be
-#'   overridden when `get()` is called, by supplying a `missing`
-#'   argument. For example, if you use `cache$get("mykey", missing =
-#'   NULL)`, it will return `NULL` if the key is not in the cache.
+#'   The `missing` and `exec_missing` parameters controls what happens when
+#'   `get()` is called with a key that is not in the cache (a cache miss). The
+#'   default behavior is to return a [key_missing()] object. This is a *sentinel
+#'   value* that indicates that the key was not present in the cache. You can
+#'   test if the returned value represents a missing key by using the
+#'   [is.key_missing()] function. You can also have `get()` return a different
+#'   sentinel value, like `NULL`. If you want to throw an error on a cache miss,
+#'   you can do so by providing a function for `missing` that takes one
+#'   argument, the key, and also use `exec_missing=TRUE`.
 #'
-#'   If your cache is configured so that `get()` returns a sentinel value
-#'   to represent a cache miss, then `set` will also not allow you to store
-#'   the sentinel value in the cache. It will throw an error if you attempt to
-#'   do so.
+#'   When the cache is created, you can supply a value for `missing`, which sets
+#'   the default value to be returned for missing values. It can also be
+#'   overridden when `get()` is called, by supplying a `missing` argument. For
+#'   example, if you use `cache$get("mykey", missing = NULL)`, it will return
+#'   `NULL` if the key is not in the cache.
+#'
+#'   If your cache is configured so that `get()` returns a sentinel value to
+#'   represent a cache miss, then `set` will also not allow you to store the
+#'   sentinel value in the cache. It will throw an error if you attempt to do
+#'   so.
 #'
 #'   Instead of returning the same sentinel value each time there is cache miss,
-#'   the cache can execute a function each time `get()` encounters missing
-#'   key. If the function returns a value, then `get()` will in turn return
-#'   that value. However, a more common use is for the function to throw an
-#'   error. If an error is thrown, then `get()` will not return a value.
+#'   the cache can execute a function each time `get()` encounters missing key.
+#'   If the function returns a value, then `get()` will in turn return that
+#'   value. However, a more common use is for the function to throw an error. If
+#'   an error is thrown, then `get()` will not return a value.
 #'
 #'   To do this, pass a one-argument function to `missing`, and use
-#'   `exec_missing=TRUE`. For example, if you want to throw an error that
-#'   prints the missing key, you could do this:
+#'   `exec_missing=TRUE`. For example, if you want to throw an error that prints
+#'   the missing key, you could do this:
 #'
 #'   \preformatted{
-#'   diskCache(
+#'   cache_mem(
 #'     missing = function(key) {
 #'       stop("Attempted to get missing key: ", key)
 #'     },
@@ -59,34 +57,33 @@
 #'   If you use this, the code that calls `get()` should be wrapped with
 #'   [tryCatch()] to gracefully handle missing keys.
 #'
-#' @section Cache pruning:
+#'   @section Cache pruning:
 #'
-#'   Cache pruning occurs when `set()` is called, or it can be invoked
-#'   manually by calling `prune()`.
+#'   Cache pruning occurs when `set()` is called, or it can be invoked manually
+#'   by calling `prune()`.
 #'
 #'   When a pruning occurs, if there are any objects that are older than
 #'   `max_age`, they will be removed.
 #'
-#'   The `max_size` and `max_n` parameters are applied to the cache as
-#'   a whole, in contrast to `max_age`, which is applied to each object
-#'   individually.
+#'   The `max_size` and `max_n` parameters are applied to the cache as a whole,
+#'   in contrast to `max_age`, which is applied to each object individually.
 #'
-#'   If the number of objects in the cache exceeds `max_n`, then objects
-#'   will be removed from the cache according to the eviction policy, which is
-#'   set with the `evict` parameter. Objects will be removed so that the
-#'   number of items is `max_n`.
+#'   If the number of objects in the cache exceeds `max_n`, then objects will be
+#'   removed from the cache according to the eviction policy, which is set with
+#'   the `evict` parameter. Objects will be removed so that the number of items
+#'   is `max_n`.
 #'
-#'   If the size of the objects in the cache exceeds `max_size`, then
-#'   objects will be removed from the cache. Objects will be removed from the
-#'   cache so that the total size remains under `max_size`. Note that the
-#'   size is calculated using the size of the files, not the size of disk space
-#'   used by the files --- these two values can differ because of files are
-#'   stored in blocks on disk. For example, if the block size is 4096 bytes,
-#'   then a file that is one byte in size will take 4096 bytes on disk.
+#'   If the size of the objects in the cache exceeds `max_size`, then objects
+#'   will be removed from the cache. Objects will be removed from the cache so
+#'   that the total size remains under `max_size`. Note that the size is
+#'   calculated using the size of the files, not the size of disk space used by
+#'   the files --- these two values can differ because of files are stored in
+#'   blocks on disk. For example, if the block size is 4096 bytes, then a file
+#'   that is one byte in size will take 4096 bytes on disk.
 #'
-#'   Another time that objects can be removed from the cache is when
-#'   `get()` is called. If the target object is older than `max_age`,
-#'   it will be removed and the cache will report it as a missing value.
+#'   Another time that objects can be removed from the cache is when `get()` is
+#'   called. If the target object is older than `max_age`, it will be removed
+#'   and the cache will report it as a missing value.
 #'
 #' @section Eviction policies:
 #'
@@ -98,7 +95,7 @@
 #'     \item{`"lru"`}{
 #'       Least Recently Used. The least recently used objects will be removed.
 #'       This uses the filesystem's atime property. Some filesystems do not
-#'       support atime, or have a very low atime resolution. The DiskCache will
+#'       support atime, or have a very low atime resolution. The cache_mem will
 #'       check for atime support, and if the filesystem does not support atime,
 #'       a warning will be issued and the "fifo" policy will be used instead.
 #'     }
@@ -118,7 +115,7 @@
 #'       `missing` is a function and `exec_missing=TRUE`, then
 #'       executes `missing`. The function can throw an error or return the
 #'       value. If either of these parameters are specified here, then they
-#'       will override the defaults that were set when the DiskCache object was
+#'       will override the defaults that were set when the cache_mem object was
 #'       created. See section Missing Keys for more information.
 #'     }
 #'     \item{`set(key, value)`}{
@@ -147,11 +144,11 @@
 #'     }
 #'   }
 #'
-#' @inheritParams diskCache
+#' @inheritParams cache_disk
 #'
 #' @importFrom utils object.size
 #' @export
-memoryCache <- function(
+cache_mem <- function(
   max_size = 100 * 1024 ^ 2,
   max_age = Inf,
   max_n = Inf,
@@ -343,7 +340,7 @@ memoryCache <- function(
   log_ <- function(text) {
     if (is.null(logfile_)) return()
 
-    text <- paste0(format(Sys.time(), "[%Y-%m-%d %H:%M:%OS3] MemoryCache "), text)
+    text <- paste0(format(Sys.time(), "[%Y-%m-%d %H:%M:%OS3] cache_mem "), text)
     cat(text, sep = "\n", file = logfile_, append = TRUE)
   }
 
@@ -361,6 +358,6 @@ memoryCache <- function(
       prune = prune,
       size = size
     ),
-    class = "memoryCache"
+    class = "cache_mem"
   )
 }
