@@ -1,6 +1,6 @@
 
-test_that("DiskCache: handling missing values", {
-  d <- diskCache()
+test_that("cache_disk: handling missing values", {
+  d <- cache_disk()
   expect_true(is.key_missing(d$get("abcd")))
   d$set("a", 100)
   expect_identical(d$get("a"), 100)
@@ -10,7 +10,7 @@ test_that("DiskCache: handling missing values", {
     "^Missing key: y$",
   )
 
-  d <- diskCache(missing = NULL)
+  d <- cache_disk(missing = NULL)
   expect_true(is.null(d$get("abcd")))
   d$set("a", 100)
   expect_identical(d$get("a"), 100)
@@ -21,7 +21,7 @@ test_that("DiskCache: handling missing values", {
   )
 
 
-  d <- diskCache(missing = function(key) stop("Missing key: ", key), exec_missing = TRUE)
+  d <- cache_disk(missing = function(key) stop("Missing key: ", key), exec_missing = TRUE)
   expect_error(d$get("abcd"), "^Missing key: abcd$")
   # When exec_missing=TRUE, should be able to set a value that's identical to
   # missing. Need to suppress warnings, because it will warn about reference
@@ -39,12 +39,12 @@ test_that("DiskCache: handling missing values", {
   )
 
   # Can't use exec_missing when missing is not a function
-  expect_error(diskCache(missing = 1, exec_missing = TRUE))
+  expect_error(cache_disk(missing = 1, exec_missing = TRUE))
 })
 
 # Issue shiny#3033
-test_that("DiskCache: pruning respects both max_n and max_size", {
-  d <- diskCache(max_n = 3, max_size = 200)
+test_that("cache_disk: pruning respects both max_n and max_size", {
+  d <- cache_disk(max_n = 3, max_size = 200)
   # Set some values. Use rnorm so that object size is large; a simple vector
   # like 1:100 will be stored very efficiently by R's ALTREP, and won't exceed
   # the max_size. We want each of these objects to exceed max_size so that

@@ -1,5 +1,5 @@
-test_that("MemoryCache: handling missing values", {
-  d <- memoryCache()
+test_that("cache_mem: handling missing values", {
+  d <- cache_mem()
   expect_true(is.key_missing(d$get("abcd")))
   d$set("a", 100)
   expect_identical(d$get("a"), 100)
@@ -9,7 +9,7 @@ test_that("MemoryCache: handling missing values", {
     "^Missing key: y$",
   )
 
-  d <- memoryCache(missing = NULL)
+  d <- cache_mem(missing = NULL)
   expect_true(is.null(d$get("abcd")))
   d$set("a", 100)
   expect_identical(d$get("a"), 100)
@@ -19,7 +19,7 @@ test_that("MemoryCache: handling missing values", {
     "^Missing key: y$",
   )
 
-  d <- memoryCache(missing = function(key) stop("Missing key: ", key), exec_missing = TRUE)
+  d <- cache_mem(missing = function(key) stop("Missing key: ", key), exec_missing = TRUE)
   expect_error(d$get("abcd"), "^Missing key: abcd$")
   # When exec_missing==TRUE, should be able to set a value that's identical to
   # missing.
@@ -35,5 +35,5 @@ test_that("MemoryCache: handling missing values", {
   )
 
   # Can't create a cache with both missing and missing_f
-  expect_error(memoryCache(missing = 1, exec_missing = TRUE))
+  expect_error(cache_mem(missing = 1, exec_missing = TRUE))
 })
