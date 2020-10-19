@@ -182,7 +182,7 @@
 #'   seconds. Use `Inf` for no age limit.
 #' @param max_size Maximum size of the cache, in bytes. If the cache exceeds
 #'   this size, cached objects will be removed according to the value of the
-#'   `evict`. Use `Inf` for no size limit.
+#'   `evict`. Use `Inf` for no size limit. The default is 1 gigabyte.
 #' @param max_n Maximum number of objects in the cache. If the number of objects
 #'   exceeds this value, then cached objects will be removed according to the
 #'   value of `evict`. Use `Inf` for no limit of number of items.
@@ -210,7 +210,7 @@
 #' @export
 cache_disk <- function(
   dir = NULL,
-  max_size = 200 * 1024 ^ 2,
+  max_size = 1024 * 1024 ^ 2,
   max_age = Inf,
   max_n = Inf,
   evict = c("lru", "fifo"),
