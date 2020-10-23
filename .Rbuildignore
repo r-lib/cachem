@@ -3,3 +3,4 @@
 ^LICENSE\.md$
 ^\.github$
 ^.*\.sublime-project$
+^README\.Rmd$
