@@ -13,7 +13,13 @@ format.cache <- function(x, ...) {
 format_methods <- function(x) {
   vapply(seq_along(x),
     function(i) {
-      paste0(names(x)[i], "(", format_args(x[[i]]), ")")
+      name <- names(x)[i]
+      f <- x[[i]]
+      if (is.function(f)) {
+        paste0(name, "(", format_args(f), ")")
+      } else {
+        name
+      }
     }, character(1)
   )
 }
