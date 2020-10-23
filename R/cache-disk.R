@@ -563,6 +563,6 @@ cache_disk <- function(
       prune = prune,
       size = size
     ),
-    class = "cache_disk"
+    class = c("cache_disk", "cache")
   )
 }

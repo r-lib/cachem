@@ -358,6 +358,6 @@ cache_mem <- function(
       prune = prune,
       size = size
     ),
-    class = "cache_mem"
+    class = c("cache_mem", "cache")
   )
 }
