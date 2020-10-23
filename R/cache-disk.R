@@ -267,6 +267,13 @@ cache_disk <- function(
   prune_throttle_counter_ <- sample.int(20, 1) - 1
   prune_last_time_        <- as.numeric(Sys.time())
 
+  if (destroy_on_finalize_) {
+    reg.finalizer(
+      environment(),
+      function(e) { e$destroy() }
+    )
+  }
+
   # ============================================================================
   # Public methods
   # ============================================================================
@@ -459,6 +466,20 @@ cache_disk <- function(
     length(dir(dir_, "\\.rds$"))
   }
 
+  info = function() {
+    list(
+      dir = dir_,
+      max_size = max_size_,
+      max_age = max_age_,
+      max_n = max_n_,
+      evict = evict_,
+      destroy_on_finalize = destroy_on_finalize_,
+      missing = missing_,
+      exec_missing = exec_missing_,
+      logfile = logfile_
+    )
+  }
+
   destroy <- function() {
     if (is_destroyed()) {
       return(invisible(FALSE))
@@ -494,12 +515,6 @@ cache_disk <- function(
 
     } else {
       destroyed_
-    }
-  }
-
-  finalize <- function() {
-    if (destroy_on_finalize_) {
-      destroy()
     }
   }
 
@@ -549,6 +564,7 @@ cache_disk <- function(
     }
   }
 
+
   # ============================================================================
   # Returned object
   # ============================================================================
@@ -561,7 +577,10 @@ cache_disk <- function(
       remove = remove,
       reset = reset,
       prune = prune,
-      size = size
+      size = size,
+      destroy = destroy,
+      is_destroyed = is_destroyed,
+      info = info
     ),
     class = c("cache_disk", "cache")
   )
