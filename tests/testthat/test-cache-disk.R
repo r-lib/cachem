@@ -59,3 +59,14 @@ test_that("cache_disk: pruning respects both max_n and max_size", {
   d$prune()
   expect_identical(d$keys(), "f")
 })
+
+
+test_that("destroy_on_finalize works", {
+  d <- cache_disk(destroy_on_finalize = TRUE)
+  cache_dir <- d$info()$dir
+
+  expect_true(dir.exists(cache_dir))
+  rm(d)
+  gc()
+  expect_false(dir.exists(cache_dir))
+})
