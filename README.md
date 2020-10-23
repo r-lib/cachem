@@ -1,4 +1,14 @@
 
+  - [cache](#cache)
+      - [Installation](#installation)
+      - [Usage](#usage)
+      - [Cache types](#cache-types)
+          - [`cache_mem()`](#cache_mem)
+          - [`cache_disk()`](#cache_disk)
+      - [Cache API](#cache-api)
+      - [Pruning](#pruning)
+      - [Layered caches](#layered-caches)
+
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
 # cache
