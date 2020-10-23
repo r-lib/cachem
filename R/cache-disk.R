@@ -58,10 +58,9 @@
 #'
 #'   The disk cache will throttle the pruning so that it does not happen on
 #'   every call to `set()`, because the filesystem operations for checking the
-#'   status of files can be slow. Instead, it will prune once in every 20 calls
-#'   to `set()`, or if at least 5 seconds have elapsed since the last prune
-#'   occurred, whichever is first. These parameters are currently not
-#'   customizable, but may be in the future.
+#'   status of files can be slow. Instead, it will prune once in every
+#'   `prune_rate` calls to `set()`, or if at least 5 seconds have elapsed since
+#'   the last prune occurred, whichever is first.
 #'
 #'   When a pruning occurs, if there are any objects that are older than
 #'   `max_age`, they will be removed.
@@ -203,6 +202,8 @@
 #' @param exec_missing If `FALSE` (the default), then treat `missing` as a value
 #'   to return when `get()` results in a cache miss. If `TRUE`, treat `missing`
 #'   as a function to execute when `get()` results in a cache miss.
+#' @param prune_rate How often to prune the cache. See section Cache Pruning for
+#'   more information.
 #' @param logfile An optional filename or connection object to where logging
 #'   information will be written. To log to the console, use `stderr()` or
 #'   `stdout()`.
@@ -217,8 +218,9 @@ cache_disk <- function(
   destroy_on_finalize = FALSE,
   missing = key_missing(),
   exec_missing = FALSE,
-  logfile = NULL)
-{
+  prune_rate = 20,
+  logfile = NULL
+) {
   # ============================================================================
   # Logging
   # ============================================================================
@@ -257,6 +259,7 @@ cache_disk <- function(
   destroy_on_finalize_ <- destroy_on_finalize
   missing_             <- missing
   exec_missing_        <- exec_missing
+  prune_rate_          <- prune_rate
 
   destroyed_           <- FALSE
 
@@ -264,7 +267,7 @@ cache_disk <- function(
   # so that, in the case where multiple cache_disk objects that point to the
   # same directory are created and discarded after just a few uses each,
   # pruning will still occur.
-  prune_throttle_counter_ <- sample.int(20, 1) - 1
+  prune_throttle_counter_ <- sample.int(prune_rate_, 1) - 1
   prune_last_time_        <- as.numeric(Sys.time())
 
   if (destroy_on_finalize_) {
@@ -466,7 +469,7 @@ cache_disk <- function(
     length(dir(dir_, "\\.rds$"))
   }
 
-  info = function() {
+  info <- function() {
     list(
       dir = dir_,
       max_size = max_size_,
@@ -476,7 +479,10 @@ cache_disk <- function(
       destroy_on_finalize = destroy_on_finalize_,
       missing = missing_,
       exec_missing = exec_missing_,
-      logfile = logfile_
+      prune_rate = prune_rate,
+      logfile = logfile_,
+      prune_throttle_counter = prune_throttle_counter_,
+      prune_last_time = as.POSIXct(prune_last_time_, origin = "1970-01-01")
     )
   }
 
@@ -531,16 +537,16 @@ cache_disk <- function(
     file.path(dir_, paste0(key, ".rds"))
   }
 
-  # A wrapper for prune() that throttles it, because prune() can be
-  # expensive due to filesystem operations. This function will prune only
-  # once every 20 times it is called, or if it has been more than 5 seconds
-  # since the last time the cache was actually pruned, whichever is first.
-  # In the future, the behavior may be customizable.
+  # A wrapper for prune() that throttles it, because prune() can be expensive
+  # due to filesystem operations. This function will prune only once every
+  # `prune_rate` times it is called, or if it has been more than 5 seconds since
+  # the last time the cache was actually pruned, whichever is first. In the
+  # future, the behavior may be customizable.
   prune_throttled_ <- function() {
     # Count the number of times prune() has been called.
     prune_throttle_counter_ <- prune_throttle_counter_ + 1
 
-    if (prune_throttle_counter_ > 20 ||
+    if (prune_throttle_counter_ > prune_rate_ ||
         prune_last_time_ - as.numeric(Sys.time()) > 5)
     {
       prune()

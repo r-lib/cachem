@@ -13,6 +13,7 @@ cache_disk(
   destroy_on_finalize = FALSE,
   missing = key_missing(),
   exec_missing = FALSE,
+  prune_rate = 20,
   logfile = NULL
 )
 }
@@ -51,6 +52,9 @@ more information.}
 \item{exec_missing}{If `FALSE` (the default), then treat `missing` as a value
 to return when `get()` results in a cache miss. If `TRUE`, treat `missing`
 as a function to execute when `get()` results in a cache miss.}
+
+\item{prune_rate}{How often to prune the cache. See section Cache Pruning for
+more information.}
 
 \item{logfile}{An optional filename or connection object to where logging
 information will be written. To log to the console, use `stderr()` or
@@ -117,10 +121,9 @@ the parameters `max_size`, `max_age`, `max_n`, and `evict`.
 
   The disk cache will throttle the pruning so that it does not happen on
   every call to `set()`, because the filesystem operations for checking the
-  status of files can be slow. Instead, it will prune once in every 20 calls
-  to `set()`, or if at least 5 seconds have elapsed since the last prune
-  occurred, whichever is first. These parameters are currently not
-  customizable, but may be in the future.
+  status of files can be slow. Instead, it will prune once in every
+  `prune_rate` calls to `set()`, or if at least 5 seconds have elapsed since
+  the last prune occurred, whichever is first.
 
   When a pruning occurs, if there are any objects that are older than
   `max_age`, they will be removed.
