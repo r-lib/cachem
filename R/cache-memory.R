@@ -273,6 +273,18 @@ cache_mem <- function(
     cache_$size()
   }
 
+  info <- function() {
+    list(
+      max_size = max_size_,
+      max_age = max_age_,
+      max_n = max_n_,
+      evict = evict_,
+      missing = missing_,
+      logfile = logfile_
+    )
+  }
+
+
   # ============================================================================
   # Private methods
   # ============================================================================
@@ -322,7 +334,8 @@ cache_mem <- function(
       remove = remove,
       reset = reset,
       prune = prune,
-      size = size
+      size = size,
+      info = info
     ),
     class = c("cache_mem", "cache")
   )
