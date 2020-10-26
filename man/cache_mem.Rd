@@ -5,7 +5,7 @@
 \title{Create a memory cache object}
 \usage{
 cache_mem(
-  max_size = 1024 * 1024^2,
+  max_size = 512 * 1024^2,
   max_age = Inf,
   max_n = Inf,
   evict = c("lru", "fifo"),
