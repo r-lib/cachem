@@ -6,8 +6,8 @@ test_that("cache_disk: handling missing values", {
   expect_identical(d$get("a"), 100)
   expect_identical(d$get("y", missing = NULL), NULL)
   expect_error(
-    d$get("y", missing = function(key) stop("Missing key: ", key), exec_missing = TRUE),
-    "^Missing key: y$",
+    d$get("y", missing = stop("Missing key")),
+    "^Missing key$",
   )
 
   d <- cache_disk(missing = NULL)
@@ -16,30 +16,28 @@ test_that("cache_disk: handling missing values", {
   expect_identical(d$get("a"), 100)
   expect_identical(d$get("y", missing = -1), -1)
   expect_error(
-    d$get("y", missing = function(key) stop("Missing key: ", key), exec_missing = TRUE),
-    "^Missing key: y$",
+    d$get("y", missing = stop("Missing key")),
+    "^Missing key$",
   )
 
-
-  d <- cache_disk(missing = function(key) stop("Missing key: ", key), exec_missing = TRUE)
-  expect_error(d$get("abcd"), "^Missing key: abcd$")
-  # When exec_missing=TRUE, should be able to set a value that's identical to
-  # missing. Need to suppress warnings, because it will warn about reference
-  # object (the environment captured by the function)
+  d <- cache_disk(missing = stop("Missing key"))
+  expect_error(d$get("abcd"), "^Missing key$")
   d$set("x", NULL)
-  suppressWarnings(d$set("x", function(key) stop("Missing key: ", key)))
   d$set("a", 100)
   expect_identical(d$get("a"), 100)
-  expect_identical(d$get("y", missing = NULL, exec_missing = FALSE), NULL)
-  expect_true(is.key_missing(d$get("y", missing = key_missing(), exec_missing = FALSE)))
-  expect_equal(d$get("y", exec_missing = FALSE), function(key) stop("Missing key: ", key))
+  expect_error(d$get("y"), "^Missing key$")
+  expect_identical(d$get("y", missing = NULL), NULL)
+  expect_true(is.key_missing(d$get("y", missing = key_missing())))
   expect_error(
-    d$get("y", missing = function(key) stop("Missing key 2: ", key), exec_missing = TRUE),
-    "^Missing key 2: y$",
+    d$get("y", missing = stop("Missing key 2")),
+    "^Missing key 2$",
   )
 
-  # Can't use exec_missing when missing is not a function
-  expect_error(cache_disk(missing = 1, exec_missing = TRUE))
+  # Pass in a quosure
+  expr <- rlang::quo(stop("Missing key"))
+  d <- cache_disk(missing = !!expr)
+  expect_error(d$get("y"), "^Missing key$")
+  expect_error(d$get("y"), "^Missing key$") # Make sure a second time also throws
 })
 
 # Issue shiny#3033

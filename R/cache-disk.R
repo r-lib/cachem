@@ -6,17 +6,16 @@
 #' the parameters `max_size`, `max_age`, `max_n`, and `evict`.
 #'
 #'
-#' @section Missing Keys:
+#' @section Missing keys:
 #'
-#'   The `missing` and `exec_missing` parameters controls what happens when
-#'   `get()` is called with a key that is not in the cache (a cache miss). The
-#'   default behavior is to return a [key_missing()] object. This is a *sentinel
-#'   value* that indicates that the key was not present in the cache. You can
-#'   test if the returned value represents a missing key by using the
-#'   [is.key_missing()] function. You can also have `get()` return a different
-#'   sentinel value, like `NULL`. If you want to throw an error on a cache miss,
-#'   you can do so by providing a function for `missing` that takes one
-#'   argument, the key, and also use `exec_missing=TRUE`.
+#'   The `missing` parameter controls what happens when `get()` is called with a
+#'   key that is not in the cache (a cache miss). The default behavior is to
+#'   return a [key_missing()] object. This is a *sentinel value* that indicates
+#'   that the key was not present in the cache. You can test if the returned
+#'   value represents a missing key by using the [is.key_missing()] function.
+#'   You can also have `get()` return a different sentinel value, like `NULL`.
+#'   If you want to throw an error on a cache miss, you can do so by providing
+#'   an expression for `missing`, as in `missing = stop("Missing key")`.
 #'
 #'   When the cache is created, you can supply a value for `missing`, which sets
 #'   the default value to be returned for missing values. It can also be
@@ -24,32 +23,12 @@
 #'   example, if you use `cache$get("mykey", missing = NULL)`, it will return
 #'   `NULL` if the key is not in the cache.
 #'
-#'   If your cache is configured so that `get()` returns a sentinel value to
-#'   represent a cache miss, then `set` will also not allow you to store the
-#'   sentinel value in the cache. It will throw an error if you attempt to do
-#'   so.
-#'
-#'   Instead of returning the same sentinel value each time there is cache miss,
-#'   the cache can execute a function each time `get()` encounters missing key.
-#'   If the function returns a value, then `get()` will in turn return that
-#'   value. However, a more common use is for the function to throw an error. If
-#'   an error is thrown, then `get()` will not return a value.
-#'
-#'   To do this, pass a one-argument function to `missing`, and use
-#'   `exec_missing=TRUE`. For example, if you want to throw an error that prints
-#'   the missing key, you could do this:
-#'
-#'   \preformatted{
-#'   cache_disk(
-#'     missing = function(key) {
-#'       stop("Attempted to get missing key: ", key)
-#'     },
-#'     exec_missing = TRUE
-#'   )
-#'   }
+#'   The `missing` parameter is actually an expression which is evaluated each
+#'   time there is a cache miss. A quosure (from the rlang package) can be used.
 #'
 #'   If you use this, the code that calls `get()` should be wrapped with
 #'   [tryCatch()] to gracefully handle missing keys.
+#'
 #'
 #' @section Cache pruning:
 #'
@@ -140,13 +119,11 @@
 #'  A disk cache object has the following methods:
 #'
 #'   \describe{
-#'     \item{`get(key, missing, exec_missing)`}{
+#'     \item{`get(key, missing)`}{
 #'       Returns the value associated with `key`. If the key is not in the
-#'       cache, then it returns the value specified by `missing` or,
-#'       `missing` is a function and `exec_missing=TRUE`, then
-#'       executes `missing`. The function can throw an error or return the
-#'       value. If either of these parameters are specified here, then they
-#'       will override the defaults that were set when the cache_disk object was
+#'       cache, then it evaluates the expression specified by `missing` and
+#'       returns the value. If `missing` is specified here, then it will
+#'       override the default that was set when the `cache_mem` object was
 #'       created. See section Missing Keys for more information.
 #'     }
 #'     \item{`set(key, value)`}{
@@ -191,23 +168,17 @@
 #'   garbage collected, the cache directory and all objects inside of it will be
 #'   deleted from disk. If `FALSE` (the default), it will do nothing when
 #'   finalized.
-#' @param missing A value to return or a function to execute when `get(key)` is
-#'   called but the key is not present in the cache. The default is a
-#'   [key_missing()] object. If it is a function to execute, the function must
-#'   take one argument (the key), and you must also use `exec_missing = TRUE`.
-#'   If it is a function, it is useful in most cases for it to throw an error,
-#'   although another option is to return a value. If a value is returned, that
-#'   value will in turn be returned by `get()`. See section Missing keys for
-#'   more information.
-#' @param exec_missing If `FALSE` (the default), then treat `missing` as a value
-#'   to return when `get()` results in a cache miss. If `TRUE`, treat `missing`
-#'   as a function to execute when `get()` results in a cache miss.
+#' @param missing A value to return when `get(key)` is called but the key is not
+#'   present in the cache. The default is a [key_missing()] object. It is
+#'   actually an expression that is evaluated each time there is a cache miss.
+#'   See section Missing keys for more information.
 #' @param prune_rate How often to prune the cache. See section Cache Pruning for
 #'   more information.
 #' @param logfile An optional filename or connection object to where logging
 #'   information will be written. To log to the console, use `stderr()` or
 #'   `stdout()`.
 #'
+#' @importFrom rlang enquo eval_tidy as_quosure
 #' @export
 cache_disk <- function(
   dir = NULL,
@@ -217,7 +188,6 @@ cache_disk <- function(
   evict = c("lru", "fifo"),
   destroy_on_finalize = FALSE,
   missing = key_missing(),
-  exec_missing = FALSE,
   prune_rate = 20,
   logfile = NULL
 ) {
@@ -235,9 +205,6 @@ cache_disk <- function(
   # ============================================================================
   # Initialization
   # ============================================================================
-  if (exec_missing && (!is.function(missing) || length(formals(missing)) == 0)) {
-    stop("When `exec_missing` is true, `missing` must be a function that takes one argument.")
-  }
   if (is.null(dir)) {
     dir <- tempfile("cache_disk-")
   }
@@ -257,8 +224,7 @@ cache_disk <- function(
   max_n_               <- max_n
   evict_               <- match.arg(evict)
   destroy_on_finalize_ <- destroy_on_finalize
-  missing_             <- missing
-  exec_missing_        <- exec_missing
+  missing_             <- enquo(missing)
   prune_rate_          <- prune_rate
 
   destroyed_           <- FALSE
@@ -280,7 +246,7 @@ cache_disk <- function(
   # ============================================================================
   # Public methods
   # ============================================================================
-  get <- function(key, missing = missing_, exec_missing = exec_missing_) {
+  get <- function(key, missing = missing_) {
     log_(paste0('get: key "', key, '"'))
     is_destroyed(throw = TRUE)
     validate_key(key)
@@ -306,15 +272,8 @@ cache_disk <- function(
     )
     if (read_error) {
       log_(paste0('get: key "', key, '" is missing'))
-
-      if (exec_missing) {
-        if (!is.function(missing) || length(formals(missing)) == 0) {
-          stop("When `exec_missing` is true, `missing` must be a function that takes one argument.")
-        }
-        return(missing(key))
-      } else {
-        return(missing)
-      }
+      missing <- as_quosure(missing)
+      return(eval_tidy(missing))
     }
 
     log_(paste0('get: key "', key, '" found'))
@@ -478,7 +437,6 @@ cache_disk <- function(
       evict = evict_,
       destroy_on_finalize = destroy_on_finalize_,
       missing = missing_,
-      exec_missing = exec_missing_,
       prune_rate = prune_rate,
       logfile = logfile_,
       prune_throttle_counter = prune_throttle_counter_,

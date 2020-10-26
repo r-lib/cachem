@@ -303,11 +303,11 @@ dir.exists(cachedir)
 below. If you want to create a compatible caching object, it must have
 at least the `get()` and `set()` methods:
 
-  - `get(key, missing = missing_, exec_missing = exec_missing_)`: Get
-    the object associated with `key`. The `missing` and `exec_missing`
-    parameters allow customized behavior if the key is not present.
-    Instead of returning a `key_missing()` object, it could return a
-    different value, or call a function that throws an exception.
+  - `get(key, missing = missing_)`: Get the object associated with
+    `key`. The `missing` parameter allows customized behavior if the key
+    is not present: it actually is an expression which is evaluated when
+    there is a cache miss, and it could return a value or throw an
+    error.
   - `set(key, value)`: Set a key to a value.
   - `exists(key)`: Check whether a particular key exists in the cache.
   - `remove(key)`: Remove a key-value from the cache.

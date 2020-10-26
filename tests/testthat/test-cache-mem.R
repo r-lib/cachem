@@ -5,8 +5,8 @@ test_that("cache_mem: handling missing values", {
   expect_identical(d$get("a"), 100)
   expect_identical(d$get("y", missing = NULL), NULL)
   expect_error(
-    d$get("y", missing = function(key) stop("Missing key: ", key), exec_missing = TRUE),
-    "^Missing key: y$",
+    d$get("y", missing = stop("Missing key")),
+    "^Missing key$",
   )
 
   d <- cache_mem(missing = NULL)
@@ -15,25 +15,26 @@ test_that("cache_mem: handling missing values", {
   expect_identical(d$get("a"), 100)
   expect_identical(d$get("y", missing = -1), -1)
   expect_error(
-    d$get("y", missing = function(key) stop("Missing key: ", key), exec_missing = TRUE),
-    "^Missing key: y$",
+    d$get("y", missing = stop("Missing key")),
+    "^Missing key$",
   )
 
-  d <- cache_mem(missing = function(key) stop("Missing key: ", key), exec_missing = TRUE)
-  expect_error(d$get("abcd"), "^Missing key: abcd$")
-  # When exec_missing==TRUE, should be able to set a value that's identical to
-  # missing.
+  d <- cache_mem(missing = stop("Missing key"))
+  expect_error(d$get("abcd"), "^Missing key$")
   d$set("x", NULL)
-  d$set("x", function(key) stop("Missing key: ", key))
   d$set("a", 100)
   expect_identical(d$get("a"), 100)
-  expect_identical(d$get("y", missing = NULL, exec_missing = FALSE), NULL)
-  expect_true(is.key_missing(d$get("y", missing = key_missing(), exec_missing = FALSE)))
+  expect_error(d$get("y"), "^Missing key$")
+  expect_identical(d$get("y", missing = NULL), NULL)
+  expect_true(is.key_missing(d$get("y", missing = key_missing())))
   expect_error(
-    d$get("y", missing = function(key) stop("Missing key 2: ", key), exec_missing = TRUE),
-    "^Missing key 2: y$",
+    d$get("y", missing = stop("Missing key 2")),
+    "^Missing key 2$",
   )
 
-  # Can't create a cache with both missing and missing_f
-  expect_error(cache_mem(missing = 1, exec_missing = TRUE))
+  # Pass in a quosure
+  expr <- rlang::quo(stop("Missing key"))
+  d <- cache_mem(missing = !!expr)
+  expect_error(d$get("y"), "^Missing key$")
+  expect_error(d$get("y"), "^Missing key$") # Make sure a second time also throws
 })
