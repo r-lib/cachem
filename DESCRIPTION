@@ -1,6 +1,6 @@
-Package: cache
+Package: cacheback
 Version: 0.0.0.9000
-Title: What the Package Does (One Line, Title Case)
+Title: Caching for R objects
 Description: What the package does (one paragraph).
 Authors@R: c(
     person("Winston", "Chang", , "winston@rstudio.com", c("aut", "cre")),

@@ -1,4 +1,4 @@
 library(testthat)
-library(cache)
+library(cacheback)
 
-test_check("cache")
+test_check("cacheback")

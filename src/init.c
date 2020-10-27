@@ -12,7 +12,7 @@ static const R_CallMethodDef CallEntries[] = {
   {NULL, NULL, 0}
 };
 
-attribute_visible void R_init_cache(DllInfo *dll)
+attribute_visible void R_init_cacheback(DllInfo *dll)
 {
   R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
   R_useDynamicSymbols(dll, FALSE);
