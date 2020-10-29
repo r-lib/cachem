@@ -18,15 +18,15 @@ knitr::opts_chunk$set(
 )
 ```
 
-# cacheback
+# cachem
 
 <!-- badges: start -->
 [![R build status](https://github.com/wch/cache/workflows/R-CMD-check/badge.svg)](https://github.com/wch/cache/actions)
 <!-- badges: end -->
 
-The **cacheback** R package provides objects creating and managing caches. These cache objects are key-value stores, but unlike other basic key-value stores, they have built-in support for memory and age limits so that they won't have unbounded growth.
+The **cachem** R package provides objects creating and managing caches. These cache objects are key-value stores, but unlike other basic key-value stores, they have built-in support for memory and age limits so that they won't have unbounded growth.
 
-The cache objects in **cacheback** differ from some other key-value stores in the following ways:
+The cache objects in **cachem** differ from some other key-value stores in the following ways:
 
 * The cache objects provide automatic pruning so that they remain within memory limits.
 * Fetching a non-existing object returns a sentinel value. An alternative is to simply return `NULL`. This is what R lists and environments do, but it is ambiguous whether the value really is `NULL`, or if it is not present. Another alternative is to throw an exception when fetching a non-existent object. However, this results in more complicated code, as every `get()` needs to be wrapped in a `tryCatch()`.
@@ -37,7 +37,7 @@ You can install from [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("remotes")
-remotes::install_github("wch/cacheback")
+remotes::install_github("wch/cachem")
 ```
 
 ## Usage
@@ -45,7 +45,7 @@ remotes::install_github("wch/cacheback")
 To create a memory-based cache, call `cache_mem()`.
 
 ```{r}
-library(cacheback)
+library(cachem)
 m <- cache_mem()
 ```
 
@@ -96,7 +96,7 @@ if (m$exists(key)) {
 
 ## Cache types
 
-**Cacheback** comes with two kinds of cache objects: a memory cache, and a disk cache.
+**cachem** comes with two kinds of cache objects: a memory cache, and a disk cache.
 
 ### `cache_mem()`
 
@@ -283,7 +283,7 @@ mr <- cache_readonly_wrap(m)
 
 ## Pruning
 
-The cache objects provided by cacheback have automatic pruning. (Note that pruning is not required by the API, so one could implement an API-compatible cache without pruning.)
+The cache objects provided by cachem have automatic pruning. (Note that pruning is not required by the API, so one could implement an API-compatible cache without pruning.)
 
 This section describes how pruning works for `cache_mem()` and `cache_disk()`.
 

@@ -1,4 +1,4 @@
 #' @docType package
-#' @useDynLib cacheback, .registration = TRUE
+#' @useDynLib cachem, .registration = TRUE
 #' @import fastmap
 NULL

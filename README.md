@@ -1,5 +1,5 @@
 
-  - [cacheback](#cacheback)
+  - [cachem](#cachem)
       - [Installation](#installation)
       - [Usage](#usage)
       - [Cache types](#cache-types)
@@ -11,7 +11,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# cacheback
+# cachem
 
 <!-- badges: start -->
 
@@ -19,13 +19,13 @@
 status](https://github.com/wch/cache/workflows/R-CMD-check/badge.svg)](https://github.com/wch/cache/actions)
 <!-- badges: end -->
 
-The **cacheback** R package provides objects creating and managing
-caches. These cache objects are key-value stores, but unlike other basic
+The **cachem** R package provides objects creating and managing caches.
+These cache objects are key-value stores, but unlike other basic
 key-value stores, they have built-in support for memory and age limits
 so that they won’t have unbounded growth.
 
-The cache objects in **cacheback** differ from some other key-value
-stores in the following ways:
+The cache objects in **cachem** differ from some other key-value stores
+in the following ways:
 
   - The cache objects provide automatic pruning so that they remain
     within memory limits.
@@ -43,7 +43,7 @@ You can install from [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("remotes")
-remotes::install_github("wch/cacheback")
+remotes::install_github("wch/cachem")
 ```
 
 ## Usage
@@ -51,7 +51,7 @@ remotes::install_github("wch/cacheback")
 To create a memory-based cache, call `cache_mem()`.
 
 ``` r
-library(cacheback)
+library(cachem)
 m <- cache_mem()
 ```
 
@@ -116,8 +116,8 @@ if (m$exists(key)) {
 
 ## Cache types
 
-**Cacheback** comes with two kinds of cache objects: a memory cache, and
-a disk cache.
+**cachem** comes with two kinds of cache objects: a memory cache, and a
+disk cache.
 
 ### `cache_mem()`
 
@@ -376,8 +376,8 @@ mr <- cache_readonly_wrap(m)
 
 ## Pruning
 
-The cache objects provided by cacheback have automatic pruning. (Note
-that pruning is not required by the API, so one could implement an
+The cache objects provided by cachem have automatic pruning. (Note that
+pruning is not required by the API, so one could implement an
 API-compatible cache without pruning.)
 
 This section describes how pruning works for `cache_mem()` and

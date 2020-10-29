@@ -1,4 +1,4 @@
-Package: cacheback
+Package: cachem
 Version: 0.0.0.9000
 Title: Caching for R objects
 Description: What the package does (one paragraph).
