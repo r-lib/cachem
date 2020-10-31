@@ -17,30 +17,30 @@ cache_disk(
 )
 }
 \arguments{
-\item{dir}{Directory to store files for the cache. If `NULL` (the default) it
+\item{dir}{Directory to store files for the cache. If \code{NULL} (the default) it
 will create and use a temporary directory.}
 
 \item{max_size}{Maximum size of the cache, in bytes. If the cache exceeds
 this size, cached objects will be removed according to the value of the
-`evict`. Use `Inf` for no size limit. The default is 1 gigabyte.}
+\code{evict}. Use \code{Inf} for no size limit. The default is 1 gigabyte.}
 
 \item{max_age}{Maximum age of files in cache before they are evicted, in
-seconds. Use `Inf` for no age limit.}
+seconds. Use \code{Inf} for no age limit.}
 
 \item{max_n}{Maximum number of objects in the cache. If the number of objects
 exceeds this value, then cached objects will be removed according to the
-value of `evict`. Use `Inf` for no limit of number of items.}
+value of \code{evict}. Use \code{Inf} for no limit of number of items.}
 
 \item{evict}{The eviction policy to use to decide which objects are removed
-when a cache pruning occurs. Currently, `"lru"` and `"fifo"` are supported.}
+when a cache pruning occurs. Currently, \code{"lru"} and \code{"fifo"} are supported.}
 
-\item{destroy_on_finalize}{If `TRUE`, then when the cache_disk object is
+\item{destroy_on_finalize}{If \code{TRUE}, then when the cache_disk object is
 garbage collected, the cache directory and all objects inside of it will be
-deleted from disk. If `FALSE` (the default), it will do nothing when
+deleted from disk. If \code{FALSE} (the default), it will do nothing when
 finalized.}
 
-\item{missing}{A value to return when `get(key)` is called but the key is not
-present in the cache. The default is a [key_missing()] object. It is
+\item{missing}{A value to return when \code{get(key)} is called but the key is not
+present in the cache. The default is a \code{\link[=key_missing]{key_missing()}} object. It is
 actually an expression that is evaluated each time there is a cache miss.
 See section Missing keys for more information.}
 
@@ -48,92 +48,92 @@ See section Missing keys for more information.}
 more information.}
 
 \item{logfile}{An optional filename or connection object to where logging
-information will be written. To log to the console, use `stderr()` or
-`stdout()`.}
+information will be written. To log to the console, use \code{stderr()} or
+\code{stdout()}.}
 }
 \description{
 A disk cache object is a key-value store that saves the values as files in a
-directory on disk. Objects can be stored and retrieved using the `get()` and
-`set()` methods. Objects are automatically pruned from the cache according to
-the parameters `max_size`, `max_age`, `max_n`, and `evict`.
+directory on disk. Objects can be stored and retrieved using the \code{get()} and
+\code{set()} methods. Objects are automatically pruned from the cache according to
+the parameters \code{max_size}, \code{max_age}, \code{max_n}, and \code{evict}.
 }
 \section{Missing keys}{
 
 
-  The `missing` parameter controls what happens when `get()` is called with a
-  key that is not in the cache (a cache miss). The default behavior is to
-  return a [key_missing()] object. This is a *sentinel value* that indicates
-  that the key was not present in the cache. You can test if the returned
-  value represents a missing key by using the [is.key_missing()] function.
-  You can also have `get()` return a different sentinel value, like `NULL`.
-  If you want to throw an error on a cache miss, you can do so by providing
-  an expression for `missing`, as in `missing = stop("Missing key")`.
+The \code{missing} parameter controls what happens when \code{get()} is called with a
+key that is not in the cache (a cache miss). The default behavior is to
+return a \code{\link[=key_missing]{key_missing()}} object. This is a \emph{sentinel value} that indicates
+that the key was not present in the cache. You can test if the returned
+value represents a missing key by using the \code{\link[=is.key_missing]{is.key_missing()}} function.
+You can also have \code{get()} return a different sentinel value, like \code{NULL}.
+If you want to throw an error on a cache miss, you can do so by providing
+an expression for \code{missing}, as in \code{missing = stop("Missing key")}.
 
-  When the cache is created, you can supply a value for `missing`, which sets
-  the default value to be returned for missing values. It can also be
-  overridden when `get()` is called, by supplying a `missing` argument. For
-  example, if you use `cache$get("mykey", missing = NULL)`, it will return
-  `NULL` if the key is not in the cache.
+When the cache is created, you can supply a value for \code{missing}, which sets
+the default value to be returned for missing values. It can also be
+overridden when \code{get()} is called, by supplying a \code{missing} argument. For
+example, if you use \code{cache$get("mykey", missing = NULL)}, it will return
+\code{NULL} if the key is not in the cache.
 
-  The `missing` parameter is actually an expression which is evaluated each
-  time there is a cache miss. A quosure (from the rlang package) can be used.
+The \code{missing} parameter is actually an expression which is evaluated each
+time there is a cache miss. A quosure (from the rlang package) can be used.
 
-  If you use this, the code that calls `get()` should be wrapped with
-  [tryCatch()] to gracefully handle missing keys.
+If you use this, the code that calls \code{get()} should be wrapped with
+\code{\link[=tryCatch]{tryCatch()}} to gracefully handle missing keys.
 }
 
 \section{Cache pruning}{
 
 
-  Cache pruning occurs when `set()` is called, or it can be invoked manually
-  by calling `prune()`.
+Cache pruning occurs when \code{set()} is called, or it can be invoked manually
+by calling \code{prune()}.
 
-  The disk cache will throttle the pruning so that it does not happen on
-  every call to `set()`, because the filesystem operations for checking the
-  status of files can be slow. Instead, it will prune once in every
-  `prune_rate` calls to `set()`, or if at least 5 seconds have elapsed since
-  the last prune occurred, whichever is first.
+The disk cache will throttle the pruning so that it does not happen on
+every call to \code{set()}, because the filesystem operations for checking the
+status of files can be slow. Instead, it will prune once in every
+\code{prune_rate} calls to \code{set()}, or if at least 5 seconds have elapsed since
+the last prune occurred, whichever is first.
 
-  When a pruning occurs, if there are any objects that are older than
-  `max_age`, they will be removed.
+When a pruning occurs, if there are any objects that are older than
+\code{max_age}, they will be removed.
 
-  The `max_size` and `max_n` parameters are applied to the cache as a whole,
-  in contrast to `max_age`, which is applied to each object individually.
+The \code{max_size} and \code{max_n} parameters are applied to the cache as a whole,
+in contrast to \code{max_age}, which is applied to each object individually.
 
-  If the number of objects in the cache exceeds `max_n`, then objects will be
-  removed from the cache according to the eviction policy, which is set with
-  the `evict` parameter. Objects will be removed so that the number of items
-  is `max_n`.
+If the number of objects in the cache exceeds \code{max_n}, then objects will be
+removed from the cache according to the eviction policy, which is set with
+the \code{evict} parameter. Objects will be removed so that the number of items
+is \code{max_n}.
 
-  If the size of the objects in the cache exceeds `max_size`, then objects
-  will be removed from the cache. Objects will be removed from the cache so
-  that the total size remains under `max_size`. Note that the size is
-  calculated using the size of the files, not the size of disk space used by
-  the files --- these two values can differ because of files are stored in
-  blocks on disk. For example, if the block size is 4096 bytes, then a file
-  that is one byte in size will take 4096 bytes on disk.
+If the size of the objects in the cache exceeds \code{max_size}, then objects
+will be removed from the cache. Objects will be removed from the cache so
+that the total size remains under \code{max_size}. Note that the size is
+calculated using the size of the files, not the size of disk space used by
+the files --- these two values can differ because of files are stored in
+blocks on disk. For example, if the block size is 4096 bytes, then a file
+that is one byte in size will take 4096 bytes on disk.
 
-  Another time that objects can be removed from the cache is when `get()` is
-  called. If the target object is older than `max_age`, it will be removed
-  and the cache will report it as a missing value.
+Another time that objects can be removed from the cache is when \code{get()} is
+called. If the target object is older than \code{max_age}, it will be removed
+and the cache will report it as a missing value.
 }
 
 \section{Eviction policies}{
 
 
-  If `max_n` or `max_size` are used, then objects will be removed from the
-  cache according to an eviction policy. The available eviction policies are:
+If \code{max_n} or \code{max_size} are used, then objects will be removed from the
+cache according to an eviction policy. The available eviction policies are:
 
-  \describe{
-    \item{`"lru"`}{
-      Least Recently Used. The least recently used objects will be removed.
-      This uses the filesystem's mtime property. When "lru" is used, each
-      `get()` is called, it will update the file's mtime.
-    }
-    \item{`"fifo"`}{
-      First-in-first-out. The oldest objects will be removed.
-    }
-  }
+\describe{
+\item{\code{"lru"}}{
+Least Recently Used. The least recently used objects will be removed.
+This uses the filesystem's mtime property. When "lru" is used, each
+\code{get()} is called, it will update the file's mtime.
+}
+\item{\code{"fifo"}}{
+First-in-first-out. The oldest objects will be removed.
+}
+}
 
 Both of these policies use files' mtime. Note that some filesystems (notably
 FAT) have poor mtime resolution. (atime is not used because support for atime
@@ -143,70 +143,70 @@ is worse than mtime.)
 \section{Sharing among multiple processes}{
 
 
-  The directory for a cache_disk can be shared among multiple R processes. To
-  do this, each R process should have a cache_disk object that uses the same
-  directory. Each cache_disk will do pruning independently of the others, so
-  if they have different pruning parameters, then one cache_disk may remove
-  cached objects before another cache_disk would do so.
+The directory for a cache_disk can be shared among multiple R processes. To
+do this, each R process should have a cache_disk object that uses the same
+directory. Each cache_disk will do pruning independently of the others, so
+if they have different pruning parameters, then one cache_disk may remove
+cached objects before another cache_disk would do so.
 
-  Even though it is possible for multiple processes to share a cache_disk
-  directory, this should not be done on networked file systems, because of
-  slow performance of networked file systems can cause problems. If you need
-  a high-performance shared cache, you can use one built on a database like
-  Redis, SQLite, mySQL, or similar.
+Even though it is possible for multiple processes to share a cache_disk
+directory, this should not be done on networked file systems, because of
+slow performance of networked file systems can cause problems. If you need
+a high-performance shared cache, you can use one built on a database like
+Redis, SQLite, mySQL, or similar.
 
-  When multiple processes share a cache directory, there are some potential
-  race conditions. For example, if your code calls `exists(key)` to check if
-  an object is in the cache, and then call `get(key)`, the object may be
-  removed from the cache in between those two calls, and `get(key)` will
-  throw an error. Instead of calling the two functions, it is better to
-  simply call `get(key)`, and check that the returned object is not a
-  `key_missing()` object, using `is.key_missing()`. This effectively tests
-  for existence and gets the object in one operation.
+When multiple processes share a cache directory, there are some potential
+race conditions. For example, if your code calls \code{exists(key)} to check if
+an object is in the cache, and then call \code{get(key)}, the object may be
+removed from the cache in between those two calls, and \code{get(key)} will
+throw an error. Instead of calling the two functions, it is better to
+simply call \code{get(key)}, and check that the returned object is not a
+\code{key_missing()} object, using \code{is.key_missing()}. This effectively tests
+for existence and gets the object in one operation.
 
-  It is also possible for one processes to prune objects at the same time
-  that another processes is trying to prune objects. If this happens, you may
-  see a warning from `file.remove()` failing to remove a file that has
-  already been deleted.
+It is also possible for one processes to prune objects at the same time
+that another processes is trying to prune objects. If this happens, you may
+see a warning from \code{file.remove()} failing to remove a file that has
+already been deleted.
 }
 
 \section{Methods}{
 
 
- A disk cache object has the following methods:
+A disk cache object has the following methods:
 
-  \describe{
-    \item{`get(key, missing)`}{
-      Returns the value associated with `key`. If the key is not in the
-      cache, then it evaluates the expression specified by `missing` and
-      returns the value. If `missing` is specified here, then it will
-      override the default that was set when the `cache_mem` object was
-      created. See section Missing Keys for more information.
-    }
-    \item{`set(key, value)`}{
-      Stores the `key`-`value` pair in the cache.
-    }
-    \item{`exists(key)`}{
-      Returns `TRUE` if the cache contains the key, otherwise
-      `FALSE`.
-    }
-    \item{`size()`}{
-      Returns the number of items currently in the cache.
-    }
-    \item{`keys()`}{
-      Returns a character vector of all keys currently in the cache.
-    }
-    \item{`reset()`}{
-      Clears all objects from the cache.
-    }
-    \item{`destroy()`}{
-      Clears all objects in the cache, and removes the cache directory from
-      disk.
-    }
-    \item{`prune()`}{
-      Prunes the cache, using the parameters specified by `max_size`,
-      `max_age`, `max_n`, and `evict`.
-    }
-  }
+\describe{
+\item{\code{get(key, missing)}}{
+Returns the value associated with \code{key}. If the key is not in the
+cache, then it evaluates the expression specified by \code{missing} and
+returns the value. If \code{missing} is specified here, then it will
+override the default that was set when the \code{cache_mem} object was
+created. See section Missing Keys for more information.
+}
+\item{\code{set(key, value)}}{
+Stores the \code{key}-\code{value} pair in the cache.
+}
+\item{\code{exists(key)}}{
+Returns \code{TRUE} if the cache contains the key, otherwise
+\code{FALSE}.
+}
+\item{\code{size()}}{
+Returns the number of items currently in the cache.
+}
+\item{\code{keys()}}{
+Returns a character vector of all keys currently in the cache.
+}
+\item{\code{reset()}}{
+Clears all objects from the cache.
+}
+\item{\code{destroy()}}{
+Clears all objects in the cache, and removes the cache directory from
+disk.
+}
+\item{\code{prune()}}{
+Prunes the cache, using the parameters specified by \code{max_size},
+\code{max_age}, \code{max_n}, and \code{evict}.
+}
+}
 }
 

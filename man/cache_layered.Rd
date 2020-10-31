@@ -10,8 +10,8 @@ cache_layered(..., logfile = NULL)
 \item{...}{Cache objects to compose into a new, layered cache object.}
 
 \item{logfile}{An optional filename or connection object to where logging
-information will be written. To log to the console, use `stderr()` or
-`stdout()`.}
+information will be written. To log to the console, use \code{stderr()} or
+\code{stdout()}.}
 }
 \description{
 Compose any number of cache objects into a new, layered cache object
