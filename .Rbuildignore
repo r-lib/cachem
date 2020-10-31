@@ -4,3 +4,6 @@
 ^\.github$
 ^.*\.sublime-project$
 ^README\.Rmd$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
