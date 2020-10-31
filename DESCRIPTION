@@ -1,7 +1,8 @@
 Package: cachem
 Version: 0.0.0.9000
 Title: Caching for R objects
-Description: What the package does (one paragraph).
+Description: Provides key-value stores with automatic pruning. The caching
+    objects provided by cachem support limits on memory and object age.
 Authors@R: c(
     person("Winston", "Chang", , "winston@rstudio.com", c("aut", "cre")),
     person(family = "RStudio", role = c("cph", "fnd")))
@@ -9,6 +10,7 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 ByteCompile: true
+URL: https://r-lib.github.io/cachem/, https://github.com/r-lib/cachem
 Imports:
     rlang,
     fastmap
