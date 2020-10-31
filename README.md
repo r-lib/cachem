@@ -43,7 +43,7 @@ You can install from [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("remotes")
-remotes::install_github("wch/cachem")
+remotes::install_github("r-lib/cachem")
 ```
 
 ## Usage
