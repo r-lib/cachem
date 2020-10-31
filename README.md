@@ -108,7 +108,7 @@ another process, resulting in an error.
 
 ``` r
 # Avoid this pattern! It is only safe with cache_mem(), but if your code allows
-# using different cache objects, it can result in a race condition.
+# using other types of cache objects, it can result in a race condition.
 if (m$exists(key)) {
   value <- m$get(key)
 }
