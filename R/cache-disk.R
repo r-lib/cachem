@@ -546,6 +546,6 @@ cache_disk <- function(
       is_destroyed = is_destroyed,
       info = info
     ),
-    class = c("cache_disk", "cache")
+    class = c("cache_disk", "cachem")
   )
 }

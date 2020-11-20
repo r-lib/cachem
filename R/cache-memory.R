@@ -337,6 +337,6 @@ cache_mem <- function(
       size = size,
       info = info
     ),
-    class = c("cache_mem", "cache")
+    class = c("cache_mem", "cachem")
   )
 }

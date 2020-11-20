@@ -1,5 +1,5 @@
 #' @export
-format.cache <- function(x, ...) {
+format.cachem <- function(x, ...) {
   paste0(
     paste0("<", class(x), ">", collapse= " "), "\n",
     "  Methods:\n",
@@ -38,6 +38,6 @@ format_args <- function(x) {
 }
 
 #' @export
-print.cache <- function(x, ...) {
+print.cachem <- function(x, ...) {
   cat(format(x, ...))
 }

@@ -88,7 +88,7 @@ cache_layered <- function(..., logfile = NULL) {
       reset = reset,
       get_caches = get_caches
     ),
-    class = c("cache_layered", "cache")
+    class = c("cache_layered", "cachem")
   )
 }
 
