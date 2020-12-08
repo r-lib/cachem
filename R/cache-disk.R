@@ -174,6 +174,10 @@
 #'   See section Missing keys for more information.
 #' @param prune_rate How often to prune the cache. See section Cache Pruning for
 #'   more information.
+#' @param warn_ref_objects Should a warning be emitted when a reference is
+#'   stored in the cache? This can be useful because serializing and
+#'   deserializing a reference object (such as environments and external
+#'   pointers) can lead to unexpected behavior.
 #' @param logfile An optional filename or connection object to where logging
 #'   information will be written. To log to the console, use `stderr()` or
 #'   `stdout()`.
@@ -189,6 +193,7 @@ cache_disk <- function(
   destroy_on_finalize = FALSE,
   missing = key_missing(),
   prune_rate = 20,
+  warn_ref_objects = FALSE,
   logfile = NULL
 ) {
   # ============================================================================
@@ -311,7 +316,7 @@ cache_disk <- function(
       log_(paste0('set: key "', key, '" error'))
       stop('Error setting value for key "', key, '".')
     }
-    if (ref_object) {
+    if (warn_ref_objects && ref_object) {
       log_(paste0('set: value is a reference object'))
       warning("A reference object was cached in a serialized format. The restored object may not work as expected.")
     }

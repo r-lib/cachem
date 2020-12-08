@@ -68,3 +68,18 @@ test_that("destroy_on_finalize works", {
   gc()
   expect_false(dir.exists(cache_dir))
 })
+
+
+test_that("Warnings for caching reference objects", {
+  d <- cache_disk(warn_ref_objects = TRUE)
+  expect_warning(d$set("a", new.env()))
+  expect_warning(d$set("a", function() NULL))
+  expect_warning(d$set("a", fastmap()))  # fastmap objects contain an external pointer
+
+  # Default is to not warn on ref objects
+  d <- cache_disk()
+  expect_silent(d$set("a", new.env()))
+  expect_silent(d$set("a", function() NULL))
+  expect_silent(d$set("a", fastmap()))
+
+})

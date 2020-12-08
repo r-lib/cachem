@@ -13,6 +13,7 @@ cache_disk(
   destroy_on_finalize = FALSE,
   missing = key_missing(),
   prune_rate = 20,
+  warn_ref_objects = FALSE,
   logfile = NULL
 )
 }
@@ -46,6 +47,11 @@ See section Missing keys for more information.}
 
 \item{prune_rate}{How often to prune the cache. See section Cache Pruning for
 more information.}
+
+\item{warn_ref_objects}{Should a warning be emitted when a reference is
+stored in the cache? This can be useful because serializing and
+deserializing a reference object (such as environments and external
+pointers) can lead to unexpected behavior.}
 
 \item{logfile}{An optional filename or connection object to where logging
 information will be written. To log to the console, use \code{stderr()} or
