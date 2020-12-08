@@ -132,6 +132,7 @@ the parameters <code>max_size</code>, <code>max_age</code>, <code>max_n</code>, 
   destroy_on_finalize <span class='op'>=</span> <span class='cn'>FALSE</span>,
   missing <span class='op'>=</span> <span class='fu'><a href='https://r-lib.github.io/fastmap/reference/key_missing.html'>key_missing</a></span><span class='op'>(</span><span class='op'>)</span>,
   prune_rate <span class='op'>=</span> <span class='fl'>20</span>,
+  warn_ref_objects <span class='op'>=</span> <span class='cn'>FALSE</span>,
   logfile <span class='op'>=</span> <span class='cn'>NULL</span>
 <span class='op'>)</span></pre>
 
@@ -183,6 +184,13 @@ See section Missing keys for more information.</p></td>
       <th>prune_rate</th>
       <td><p>How often to prune the cache. See section Cache Pruning for
 more information.</p></td>
+    </tr>
+    <tr>
+      <th>warn_ref_objects</th>
+      <td><p>Should a warning be emitted when a reference is
+stored in the cache? This can be useful because serializing and
+deserializing a reference object (such as environments and external
+pointers) can lead to unexpected behavior.</p></td>
     </tr>
     <tr>
       <th>logfile</th>
