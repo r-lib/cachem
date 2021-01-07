@@ -1,13 +1,13 @@
 
-  - [cachem](#cachem)
-      - [Installation](#installation)
-      - [Usage](#usage)
-      - [Cache types](#cache-types)
-          - [`cache_mem()`](#cache_mem)
-          - [`cache_disk()`](#cache_disk)
-      - [Cache API](#cache-api)
-      - [Pruning](#pruning)
-      - [Layered caches](#layered-caches)
+-   [cachem](#cachem)
+    -   [Installation](#installation)
+    -   [Usage](#usage)
+    -   [Cache types](#cache-types)
+        -   [`cache_mem()`](#cache_mem)
+        -   [`cache_disk()`](#cache_disk)
+    -   [Cache API](#cache-api)
+    -   [Pruning](#pruning)
+    -   [Layered caches](#layered-caches)
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
@@ -27,9 +27,9 @@ so that they won’t have unbounded growth.
 The cache objects in **cachem** differ from some other key-value stores
 in the following ways:
 
-  - The cache objects provide automatic pruning so that they remain
+-   The cache objects provide automatic pruning so that they remain
     within memory limits.
-  - Fetching a non-existing object returns a sentinel value. An
+-   Fetching a non-existing object returns a sentinel value. An
     alternative is to simply return `NULL`. This is what R lists and
     environments do, but it is ambiguous whether the value really is
     `NULL`, or if it is not present. Another alternative is to throw an
@@ -39,11 +39,21 @@ in the following ways:
 
 ## Installation
 
-You can install from [GitHub](https://github.com/) with:
+To install the CRAN version:
 
 ``` r
-# install.packages("remotes")
+install.packages("cachem")
+```
+
+You can install the development version from with:
+
+``` r
+if (!require("remotes")) install.packages("remotes")
+#> Loading required package: remotes
 remotes::install_github("r-lib/cachem")
+#> Using github PAT from envvar GITHUB_PAT
+#> Skipping install of 'cachem' from a github remote, the SHA1 (ebef4f85) has not changed since last install.
+#>   Use `force = TRUE` to force installation
 ```
 
 ## Usage
@@ -168,9 +178,9 @@ to the size of cache, and the cache *thinks* it has 200MB of contents,
 the actual amount of memory consumed could be less than 200MB.
 
 <details>
-
-<summary>Demonstration of memory over-counting from
-`object.size()`</summary>
+<summary>
+Demonstration of memory over-counting from `object.size()`
+</summary>
 
 ``` r
 # Create a and b which both contain the same numeric vector.
@@ -303,25 +313,25 @@ dir.exists(cachedir)
 below. If you want to create a compatible caching object, it must have
 at least the `get()` and `set()` methods:
 
-  - `get(key, missing = missing_)`: Get the object associated with
+-   `get(key, missing = missing_)`: Get the object associated with
     `key`. The `missing` parameter allows customized behavior if the key
     is not present: it actually is an expression which is evaluated when
     there is a cache miss, and it could return a value or throw an
     error.
-  - `set(key, value)`: Set a key to a value.
-  - `exists(key)`: Check whether a particular key exists in the cache.
-  - `remove(key)`: Remove a key-value from the cache.
+-   `set(key, value)`: Set a key to a value.
+-   `exists(key)`: Check whether a particular key exists in the cache.
+-   `remove(key)`: Remove a key-value from the cache.
 
 Some optional methods:
 
-  - `reset()`: Clear all objects from the cache.
-  - `keys()`: Return a character vector of all keys in the cache.
-  - `prune()`: Prune the cache. (Some types of caches may not prune on
+-   `reset()`: Clear all objects from the cache.
+-   `keys()`: Return a character vector of all keys in the cache.
+-   `prune()`: Prune the cache. (Some types of caches may not prune on
     every access, and may temporarily grow past their limits, until the
     next pruning is triggered automatically, or manually with this
     function.)
-  - `size()`: Return the number of objects in the cache.
-  - `size()`: Return the number of objects in the cache.
+-   `size()`: Return the number of objects in the cache.
+-   `size()`: Return the number of objects in the cache.
 
 For these methods: \* `key`: can be any string with numbers and
 lower-case letters. Some storage backends may not be handle very long
@@ -390,10 +400,10 @@ specified by `max_size`. When the size of objects in the cache exceeds
 When objects are pruned from the cache, which ones are removed is
 determined by the eviction policy, `evict`:
 
-  - **`lru`**: The least-recently-used objects will be removed from the
+-   **`lru`**: The least-recently-used objects will be removed from the
     cache, until it fits within the limit. This is the default and is
     appropriate for most cases.
-  - **`fifo`**: The oldest objects will be removed first.
+-   **`fifo`**: The oldest objects will be removed first.
 
 It is also possible to set the maximum number of items that can be in
 the cache, with `max_n`. By default this is set to `Inf`, or no limit.
