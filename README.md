@@ -16,7 +16,7 @@
 <!-- badges: start -->
 
 [![R build
-status](https://github.com/wch/cache/workflows/R-CMD-check/badge.svg)](https://github.com/wch/cache/actions)
+status](https://github.com/r-lib/cachem/workflows/R-CMD-check/badge.svg)](https://github.com/r-lib/cachem/actions)
 <!-- badges: end -->
 
 The **cachem** R package provides objects creating and managing caches.
@@ -52,7 +52,7 @@ if (!require("remotes")) install.packages("remotes")
 #> Loading required package: remotes
 remotes::install_github("r-lib/cachem")
 #> Using github PAT from envvar GITHUB_PAT
-#> Skipping install of 'cachem' from a github remote, the SHA1 (ebef4f85) has not changed since last install.
+#> Skipping install of 'cachem' from a github remote, the SHA1 (59f9e716) has not changed since last install.
 #>   Use `force = TRUE` to force installation
 ```
 
