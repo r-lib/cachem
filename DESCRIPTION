@@ -1,8 +1,9 @@
 Package: cachem
 Version: 0.0.0.9000
-Title: Caching for R Objects
-Description: Provides key-value stores with automatic pruning. The caching
-    objects provided by cachem support limits on memory and object age.
+Title: Cache R Objects with Automatic Pruning
+Description: Key-value stores with automatic pruning. Caches can limit
+    either their total size or the age of the oldest object (or both),
+    automatically pruning objects to maintain the constraints.
 Authors@R: c(
     person("Winston", "Chang", , "winston@rstudio.com", c("aut", "cre")),
     person(family = "RStudio", role = c("cph", "fnd")))
