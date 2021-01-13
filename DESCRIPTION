@@ -11,7 +11,7 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 ByteCompile: true
-URL: https://r-lib.github.io/cachem/, https://github.com/r-lib/cachem
+URL: https://cachem.r-lib.org/, https://github.com/r-lib/cachem
 Imports:
     rlang,
     fastmap
