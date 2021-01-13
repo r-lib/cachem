@@ -19,3 +19,10 @@ A layered caching object, with class \code{cache_layered}.
 \description{
 Compose any number of cache objects into a new, layered cache object
 }
+\examples{
+
+# Make a layered cache from a small memory cache and large disk cache
+m <- cache_mem(max_size = 100 * 1024^2)
+d <- cache_disk(max_size = 2 * 1024^3)
+cl <- cache_layered(m, d)
+}
