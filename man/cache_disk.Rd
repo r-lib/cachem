@@ -57,6 +57,9 @@ pointers) can lead to unexpected behavior.}
 information will be written. To log to the console, use \code{stderr()} or
 \code{stdout()}.}
 }
+\value{
+A disk caching object, with class \code{cache_disk}.
+}
 \description{
 A disk cache object is a key-value store that saves the values as files in a
 directory on disk. Objects can be stored and retrieved using the \code{get()} and

@@ -3,6 +3,7 @@
 #' @param ... Cache objects to compose into a new, layered cache object.
 #' @inheritParams cache_disk
 #'
+#' @return A layered caching object, with class `cache_layered`.
 #' @export
 cache_layered <- function(..., logfile = NULL) {
   caches <- list(...)

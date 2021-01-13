@@ -182,6 +182,7 @@
 #'   information will be written. To log to the console, use `stderr()` or
 #'   `stdout()`.
 #'
+#' @return A disk caching object, with class `cache_disk`.
 #' @importFrom rlang enquo eval_tidy as_quosure
 #' @export
 cache_disk <- function(

@@ -37,6 +37,9 @@ See section Missing keys for more information.}
 information will be written. To log to the console, use \code{stderr()} or
 \code{stdout()}.}
 }
+\value{
+A memory caching object, with class \code{cache_mem}.
+}
 \description{
 A memory cache object is a key-value store that saves the values in an
 environment. Objects can be stored and retrieved using the \code{get()} and

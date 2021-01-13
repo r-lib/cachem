@@ -13,6 +13,9 @@ cache_layered(..., logfile = NULL)
 information will be written. To log to the console, use \code{stderr()} or
 \code{stdout()}.}
 }
+\value{
+A layered caching object, with class \code{cache_layered}.
+}
 \description{
 Compose any number of cache objects into a new, layered cache object
 }

@@ -123,6 +123,7 @@
 #'
 #' @inheritParams cache_disk
 #'
+#' @return A memory caching object, with class `cache_mem`.
 #' @importFrom utils object.size
 #' @export
 cache_mem <- function(
