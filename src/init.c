@@ -5,7 +5,7 @@
 #include <R_ext/Visibility.h>
 
 /* .Call calls */
-extern SEXP C_validate_key(SEXP, SEXP, SEXP);
+extern SEXP C_validate_key(SEXP);
 
 static const R_CallMethodDef CallEntries[] = {
   {"C_validate_key",                (DL_FUNC) &C_validate_key,         1},
