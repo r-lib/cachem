@@ -1,7 +1,7 @@
 cachem 1.0.1
 ============
 
-* Fixed function delcaration of `C_validate_key`.
+* Fixed function declaration of `C_validate_key`.
 
 cachem 1.0.0
 ============
