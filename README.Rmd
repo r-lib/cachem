@@ -41,7 +41,7 @@ install.packages("cachem")
 
 You can install the development version from with:
 
-```{r}
+```{r eval=FALSE}
 if (!require("remotes")) install.packages("remotes")
 remotes::install_github("r-lib/cachem")
 ```
@@ -251,6 +251,7 @@ Some optional methods:
 * `size()`: Return the number of objects in the cache.
 
 For these methods:
+
 * `key`: can be any string with numbers and lower-case letters. Some storage backends may not be handle very long keys well. For example, with a `cache_disk()`, the key is used as a filename, and on some filesystems, very filenames may hit limits on path lengths.
 * `value`: can be any R object, with some exceptions noted below.
 

@@ -49,11 +49,7 @@ You can install the development version from with:
 
 ``` r
 if (!require("remotes")) install.packages("remotes")
-#> Loading required package: remotes
 remotes::install_github("r-lib/cachem")
-#> Using github PAT from envvar GITHUB_PAT
-#> Skipping install of 'cachem' from a github remote, the SHA1 (59f9e716) has not changed since last install.
-#>   Use `force = TRUE` to force installation
 ```
 
 ## Usage
@@ -333,12 +329,13 @@ Some optional methods:
 -   `size()`: Return the number of objects in the cache.
 -   `size()`: Return the number of objects in the cache.
 
-For these methods: \* `key`: can be any string with numbers and
-lower-case letters. Some storage backends may not be handle very long
-keys well. For example, with a `cache_disk()`, the key is used as a
-filename, and on some filesystems, very filenames may hit limits on path
-lengths. \* `value`: can be any R object, with some exceptions noted
-below.
+For these methods:
+
+-   `key`: can be any string with numbers and lower-case letters. Some
+    storage backends may not be handle very long keys well. For example,
+    with a `cache_disk()`, the key is used as a filename, and on some
+    filesystems, very filenames may hit limits on path lengths.
+-   `value`: can be any R object, with some exceptions noted below.
 
 #### Limitations of serialized objects
 
