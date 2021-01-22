@@ -111,11 +111,7 @@
 <p>You can install the development version from with:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="kw"><a href="https://rdrr.io/r/base/library.html">require</a></span><span class="op">(</span><span class="st"><a href="https://remotes.r-lib.org">"remotes"</a></span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span>
-<span class="co">#&gt; Loading required package: remotes</span>
-<span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html">install_github</a></span><span class="op">(</span><span class="st">"r-lib/cachem"</span><span class="op">)</span>
-<span class="co">#&gt; Using github PAT from envvar GITHUB_PAT</span>
-<span class="co">#&gt; Skipping install of 'cachem' from a github remote, the SHA1 (59f9e716) has not changed since last install.</span>
-<span class="co">#&gt;   Use `force = TRUE` to force installation</span></code></pre></div>
+<span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html">install_github</a></span><span class="op">(</span><span class="st">"r-lib/cachem"</span><span class="op">)</span></code></pre></div>
 </div>
 <div id="usage" class="section level2">
 <h2 class="hasAnchor">
@@ -288,7 +284,13 @@
 <li>
 <code>size()</code>: Return the number of objects in the cache.</li>
 </ul>
-<p>For these methods: * <code>key</code>: can be any string with numbers and lower-case letters. Some storage backends may not be handle very long keys well. For example, with a <code><a href="reference/cache_disk.html">cache_disk()</a></code>, the key is used as a filename, and on some filesystems, very filenames may hit limits on path lengths. * <code>value</code>: can be any R object, with some exceptions noted below.</p>
+<p>For these methods:</p>
+<ul>
+<li>
+<code>key</code>: can be any string with numbers and lower-case letters. Some storage backends may not be handle very long keys well. For example, with a <code><a href="reference/cache_disk.html">cache_disk()</a></code>, the key is used as a filename, and on some filesystems, very filenames may hit limits on path lengths.</li>
+<li>
+<code>value</code>: can be any R object, with some exceptions noted below.</li>
+</ul>
 <div id="limitations-of-serialized-objects" class="section level4">
 <h4 class="hasAnchor">
 <a href="#limitations-of-serialized-objects" class="anchor"></a>Limitations of serialized objects</h4>
