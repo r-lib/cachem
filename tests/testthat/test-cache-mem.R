@@ -48,7 +48,7 @@ test_that("cache_mem: pruning respects max_n", {
   d$set("c", rnorm(100))
   d$set("d", rnorm(100))
   d$set("e", rnorm(100))
-  expect_setequal(d$keys(), c("c", "d", "e"))
+  expect_identical(sort(d$keys()), c("c", "d", "e"))
 })
 
 test_that("cache_mem: pruning respects max_size", {
@@ -56,7 +56,7 @@ test_that("cache_mem: pruning respects max_size", {
   d$set("a", rnorm(100))
   d$set("b", rnorm(100))
   d$set("c", 1)
-  expect_setequal(d$keys(), c("c"))
+  expect_identical(sort(d$keys()), c("c"))
   d$set("d", rnorm(100))
   # Objects are pruned with oldest first, so even though "c" would fit in the
   # cache, it is removed after adding "d" (and "d" is removed as well because it
@@ -64,7 +64,7 @@ test_that("cache_mem: pruning respects max_size", {
   expect_length(d$keys(), 0)
   d$set("e", 2)
   d$set("f", 3)
-  expect_setequal(d$keys(), c("e", "f"))
+  expect_identical(sort(d$keys()), c("e", "f"))
 })
 
 test_that("cache_mem: pruning respects both max_n and max_size", {
@@ -82,5 +82,5 @@ test_that("cache_mem: pruning respects both max_n and max_size", {
   d$set("g", 1)
   d$set("h", 1)
   d$set("i", 1)
-  expect_setequal(d$keys(), c("g", "h", "i"))
+  expect_identical(sort(d$keys()), c("g", "h", "i"))
 })
