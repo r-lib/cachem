@@ -268,7 +268,9 @@ cache according to an eviction policy. The available eviction policies are:</p>
 <dl>
 <dt><code>"lru"</code></dt><dd><p>Least Recently Used. The least recently used objects will be removed.
 This uses the filesystem's mtime property. When "lru" is used, each
-<code><a href='https://rdrr.io/r/base/get.html'>get()</a></code> is called, it will update the file's mtime.</p></dd>
+<code><a href='https://rdrr.io/r/base/get.html'>get()</a></code> is called, it will update the file's mtime using
+<code><a href='https://rdrr.io/r/base/Sys.setFileTime.html'>Sys.setFileTime()</a></code>. Note that on some platforms, the resolution of
+<code><a href='https://rdrr.io/r/base/Sys.setFileTime.html'>Sys.setFileTime()</a></code> may be low, one or two seconds.</p></dd>
 <dt><code>"fifo"</code></dt><dd><p>First-in-first-out. The oldest objects will be removed.</p></dd>
 
 </dl>
