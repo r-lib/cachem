@@ -164,8 +164,13 @@ cache_mem <- function(
     }
 
     log_(paste0('get: key "', key, '" found'))
-    value <- cache_$get(key)$value
-    value
+    res <- cache_$get(key)
+
+    # Update the atime
+    res$atime <- as.numeric(Sys.time())
+    cache_$set(key, res)
+
+    res$value
   }
 
   set <- function(key, value) {
