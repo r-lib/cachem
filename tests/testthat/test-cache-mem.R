@@ -38,3 +38,49 @@ test_that("cache_mem: handling missing values", {
   expect_error(d$get("y"), "^Missing key$")
   expect_error(d$get("y"), "^Missing key$") # Make sure a second time also throws
 })
+
+
+
+test_that("cache_mem: pruning respects max_n", {
+  d <- cache_mem(max_n = 3)
+  d$set("a", rnorm(100))
+  d$set("b", rnorm(100))
+  d$set("c", rnorm(100))
+  d$set("d", rnorm(100))
+  d$set("e", rnorm(100))
+  expect_setequal(d$keys(), c("c", "d", "e"))
+})
+
+test_that("cache_mem: pruning respects max_size", {
+  d <- cache_mem(max_size = 200)
+  d$set("a", rnorm(100))
+  d$set("b", rnorm(100))
+  d$set("c", 1)
+  expect_setequal(d$keys(), c("c"))
+  d$set("d", rnorm(100))
+  # Objects are pruned with oldest first, so even though "c" would fit in the
+  # cache, it is removed after adding "d" (and "d" is removed as well because it
+  # doesn't fit).
+  expect_length(d$keys(), 0)
+  d$set("e", 2)
+  d$set("f", 3)
+  expect_setequal(d$keys(), c("e", "f"))
+})
+
+test_that("cache_mem: pruning respects both max_n and max_size", {
+  d <- cache_mem(max_n = 3, max_size = 200)
+  # Set some values. Use rnorm so that object size is large; a simple vector
+  # like 1:100 will be stored very efficiently by R's ALTREP, and won't exceed
+  # the max_size. We want each of these objects to exceed max_size so that
+  # they'll be pruned.
+  d$set("a", rnorm(100))
+  d$set("b", rnorm(100))
+  d$set("c", rnorm(100))
+  d$set("d", rnorm(100))
+  d$set("e", rnorm(100))
+  d$set("f", 1)   # This object is small and shouldn't be pruned.
+  d$set("g", 1)
+  d$set("h", 1)
+  d$set("i", 1)
+  expect_setequal(d$keys(), c("g", "h", "i"))
+})
