@@ -306,12 +306,30 @@ cache_mem <- function(
   }
 
   object_info_ = function() {
-    keys <- cache_$keys()
+    objs <- cache_$as_list()
+    len  <- length(objs)
+
+    # Pre-allocate these vectors and fill them with a for loop. This is faster
+    # than calling vapply() multiple times to extract each one.
+    key   <- character(len)
+    size  <- numeric(len)
+    mtime <- numeric(len)
+    atime <- numeric(len)
+
+    for (i in seq_len(len)) {
+      obj <- objs[[i]]
+
+      key[i]   <- obj$key
+      size[i]  <- obj$size
+      mtime[i] <- obj$mtime
+      atime[i] <- obj$atime
+    }
+
     data.frame(
-      key   = keys,
-      size  = vapply(keys, function(key) cache_$get(key)$size,  0),
-      mtime = vapply(keys, function(key) cache_$get(key)$mtime, 0),
-      atime = vapply(keys, function(key) cache_$get(key)$atime, 0),
+      key   = key,
+      size  = size,
+      mtime = mtime,
+      atime = atime,
       stringsAsFactors = FALSE
     )
   }
