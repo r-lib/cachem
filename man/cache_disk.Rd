@@ -137,7 +137,9 @@ cache according to an eviction policy. The available eviction policies are:
 \item{\code{"lru"}}{
 Least Recently Used. The least recently used objects will be removed.
 This uses the filesystem's mtime property. When "lru" is used, each
-\code{get()} is called, it will update the file's mtime.
+\code{get()} is called, it will update the file's mtime using
+\code{\link[=Sys.setFileTime]{Sys.setFileTime()}}. Note that on some platforms, the resolution of
+\code{\link[=Sys.setFileTime]{Sys.setFileTime()}} may be low, one or two seconds.
 }
 \item{\code{"fifo"}}{
 First-in-first-out. The oldest objects will be removed.

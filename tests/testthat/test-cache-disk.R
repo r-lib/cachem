@@ -45,30 +45,30 @@ test_that("cache_disk: pruning respects max_n", {
   d <- cache_disk(max_n = 3)
   # NOTE: The short delays after each item are meant to tests more reliable on
   # CI systems.
-  d$set("a", rnorm(100)); Sys.sleep(0.001)
-  d$set("b", rnorm(100)); Sys.sleep(0.001)
-  d$set("c", rnorm(100)); Sys.sleep(0.001)
-  d$set("d", rnorm(100)); Sys.sleep(0.001)
-  d$set("e", rnorm(100)); Sys.sleep(0.001)
+  d$set("a", rnorm(100)); Sys.sleep(0.01)
+  d$set("b", rnorm(100)); Sys.sleep(0.01)
+  d$set("c", rnorm(100)); Sys.sleep(0.01)
+  d$set("d", rnorm(100)); Sys.sleep(0.01)
+  d$set("e", rnorm(100)); Sys.sleep(0.01)
   d$prune()
   expect_identical(sort(d$keys()), c("c", "d", "e"))
 })
 
 test_that("cache_disk: pruning respects max_size", {
   d <- cache_disk(max_size = 200)
-  d$set("a", rnorm(100)); Sys.sleep(0.001)
-  d$set("b", rnorm(100)); Sys.sleep(0.001)
-  d$set("c", 1);          Sys.sleep(0.001)
+  d$set("a", rnorm(100)); Sys.sleep(0.01)
+  d$set("b", rnorm(100)); Sys.sleep(0.01)
+  d$set("c", 1);          Sys.sleep(0.01)
   d$prune()
   expect_identical(sort(d$keys()), c("c"))
-  d$set("d", rnorm(100)); Sys.sleep(0.001)
+  d$set("d", rnorm(100)); Sys.sleep(0.01)
   # Objects are pruned with oldest first, so even though "c" would fit in the
   # cache, it is removed after adding "d" (and "d" is removed as well because it
   # doesn't fit).
   d$prune()
   expect_length(d$keys(), 0)
-  d$set("e", 2);          Sys.sleep(0.001)
-  d$set("f", 3);          Sys.sleep(0.001)
+  d$set("e", 2);          Sys.sleep(0.01)
+  d$set("f", 3);          Sys.sleep(0.01)
   d$prune()
   expect_identical(sort(d$keys()), c("e", "f"))
 })
@@ -91,40 +91,61 @@ test_that("cache_disk: pruning respects both max_n and max_size", {
   expect_identical(d$keys(), "f")
 })
 
+# Return TRUE if the Sys.setFileTime() has subsecond resolution, FALSE
+# otherwise.
+setfiletime_has_subsecond_resolution <- function() {
+  tmp <- tempfile()
+  file.create(tmp)
+  Sys.setFileTime(tmp, Sys.time())
+  time <- as.numeric(file.info(tmp)[['mtime']])
+  if (time == floor(time)) {
+    return(FALSE)
+  } else {
+    return(TRUE)
+  }
+}
+
 test_that('cache_disk: pruning with evict="lru"', {
+  # For lru tests, make sure there's sub-second resolution for
+  # Sys.setFileTime(), because that's what the lru code uses to update times.
+  skip_if_not(
+    setfiletime_has_subsecond_resolution(),
+    "Sys.setFileTime() does not have subsecond resolution on this platform."
+  )
+
   d <- cache_disk(max_n = 2)
-  d$set("a", 1); Sys.sleep(0.001)
-  d$set("b", 1); Sys.sleep(0.001)
-  d$set("c", 1); Sys.sleep(0.001)
+  d$set("a", 1); Sys.sleep(0.01)
+  d$set("b", 1); Sys.sleep(0.01)
+  d$set("c", 1); Sys.sleep(0.01)
   d$prune()
   expect_identical(sort(d$keys()), c("b", "c"))
-  d$get("b")
-  d$set("d", 1); Sys.sleep(0.001)
+  d$get("b");    Sys.sleep(0.01)
+  d$set("d", 1); Sys.sleep(0.01)
   d$prune()
   expect_identical(sort(d$keys()), c("b", "d"))
-  d$get("b")
-  d$set("e", 2); Sys.sleep(0.001)
-  d$get("b")
-  d$set("f", 3); Sys.sleep(0.001)
+  d$get("b");    Sys.sleep(0.01)
+  d$set("e", 2); Sys.sleep(0.01)
+  d$get("b");    Sys.sleep(0.01)
+  d$set("f", 3); Sys.sleep(0.01)
   d$prune()
   expect_identical(sort(d$keys()), c("b", "f"))
 })
 
 test_that('cache_disk: pruning with evict="fifo"', {
   d <- cache_disk(max_n = 2, evict = "fifo")
-  d$set("a", 1); Sys.sleep(0.001)
-  d$set("b", 1); Sys.sleep(0.001)
-  d$set("c", 1); Sys.sleep(0.001)
+  d$set("a", 1); Sys.sleep(0.01)
+  d$set("b", 1); Sys.sleep(0.01)
+  d$set("c", 1); Sys.sleep(0.01)
   d$prune()
   expect_identical(sort(d$keys()), c("b", "c"))
   d$get("b")
-  d$set("d", 1); Sys.sleep(0.001)
+  d$set("d", 1); Sys.sleep(0.01)
   d$prune()
   expect_identical(sort(d$keys()), c("c", "d"))
   d$get("b")
-  d$set("e", 2); Sys.sleep(0.001)
+  d$set("e", 2); Sys.sleep(0.01)
   d$get("b")
-  d$set("f", 3); Sys.sleep(0.001)
+  d$set("f", 3); Sys.sleep(0.01)
   d$prune()
   expect_identical(sort(d$keys()), c("e", "f"))
 })

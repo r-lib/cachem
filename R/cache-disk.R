@@ -73,7 +73,9 @@
 #'     \item{`"lru"`}{
 #'       Least Recently Used. The least recently used objects will be removed.
 #'       This uses the filesystem's mtime property. When "lru" is used, each
-#'       `get()` is called, it will update the file's mtime.
+#'       `get()` is called, it will update the file's mtime using
+#'       [Sys.setFileTime()]. Note that on some platforms, the resolution of
+#'       [Sys.setFileTime()] may be low, one or two seconds.
 #'     }
 #'     \item{`"fifo"`}{
 #'       First-in-first-out. The oldest objects will be removed.
