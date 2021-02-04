@@ -136,6 +136,7 @@ cache_mem <- function(
   if (!is.numeric(max_size)) stop("max_size must be a number. Use `Inf` for no limit.")
   if (!is.numeric(max_age))  stop("max_age must be a number. Use `Inf` for no limit.")
   if (!is.numeric(max_n))    stop("max_n must be a number. Use `Inf` for no limit.")
+
   cache_        <- fastmap()
   max_size_     <- max_size
   max_age_      <- max_age
@@ -143,6 +144,16 @@ cache_mem <- function(
   evict_        <- match.arg(evict)
   missing_      <- enquo(missing)
   logfile_      <- logfile
+
+  total_n_      <- 0
+  total_size_   <- 0
+
+  PRUNE_SIZE    <- is.finite(max_size_)
+  PRUNE_AGE     <- is.finite(max_age_)
+  PRUNE_N       <- is.finite(max_n_)
+
+  DEBUG         <- TRUE
+
 
   # ============================================================================
   # Public methods
@@ -175,12 +186,24 @@ cache_mem <- function(
 
     time <- as.numeric(Sys.time())
 
+    has_key <- cache_$has(key)
+
+    if (!has_key) {
+      total_n_ <<- total_n_ + 1
+    }
+
     # Only record size if we're actually using max_size for pruning.
-    if (is.finite(max_size_)) {
+    if (PRUNE_SIZE) {
       # Reported size is rough! See ?object.size.
       size <- as.numeric(object.size(value))
+      total_size_ <<- total_size_ + size
+
+      if (has_key) {
+        total_size_ <<- total_size_ - cache_$get(key)$size
+      }
+
     } else {
-      size <- NULL
+      size <- NA_real_
     }
 
     cache_$set(key, list(
@@ -206,7 +229,7 @@ cache_mem <- function(
   remove <- function(key) {
     log_(paste0('remove: key "', key, '"'))
     validate_key(key)
-    cache_$remove(key)
+    remove_(key)
     invisible(TRUE)
   }
 
@@ -218,16 +241,34 @@ cache_mem <- function(
 
   prune <- function() {
     log_(paste0('prune'))
+
+    # Quick check to see if we need to prune
+    if ((!PRUNE_SIZE || total_size_ <= max_size_) &&
+        (!PRUNE_N || total_n_ <= max_n_))
+    {
+      return(invisible(TRUE))
+    }
+
     info <- object_info_()
 
+    if (DEBUG) {
+      # Sanity checks
+      if (PRUNE_SIZE && sum(info$size) != total_size_) {
+        stop("Size mismatch")
+      }
+      if (nrow(info) != total_n_) {
+        stop("Count mismatch")
+      }
+    }
+
     # 1. Remove any objects where the age exceeds max age.
-    if (is.finite(max_age_)) {
+    if (PRUNE_AGE) {
       time <- as.numeric(Sys.time())
       timediff <- time - info$mtime
       rm_idx <- timediff > max_age_
       if (any(rm_idx)) {
         log_(paste0("prune max_age: Removing ", paste(info$key[rm_idx], collapse = ", ")))
-        cache_$remove(info$key[rm_idx])
+        remove_(info$key[rm_idx])
         info <- info[!rm_idx, ]
       }
     }
@@ -250,21 +291,21 @@ cache_mem <- function(
     }
 
     # 2. Remove objects if there are too many.
-    if (is.finite(max_n_) && nrow(info) > max_n_) {
+    if (PRUNE_N && nrow(info) > max_n_) {
       ensure_info_is_sorted()
       rm_idx <- seq_len(nrow(info)) > max_n_
       log_(paste0("prune max_n: Removing ", paste(info$key[rm_idx], collapse = ", ")))
-      cache_$remove(info$key[rm_idx])
+      remove_(info$key[rm_idx])
       info <- info[!rm_idx, ]
     }
 
     # 3. Remove objects if cache is too large.
-    if (is.finite(max_size_) && sum(info$size) > max_size_) {
+    if (PRUNE_SIZE && sum(info$size) > max_size_) {
       ensure_info_is_sorted()
       cum_size <- cumsum(info$size)
       rm_idx <- cum_size > max_size_
       log_(paste0("prune max_size: Removing ", paste(info$key[rm_idx], collapse = ", ")))
-      cache_$remove(info$key[rm_idx])
+      remove_(info$key[rm_idx])
       info <- info[!rm_idx, ]
     }
 
@@ -272,6 +313,9 @@ cache_mem <- function(
   }
 
   size <- function() {
+    if (DEBUG) {
+      if (cache_$size() != total_n_) stop("n mismatch")
+    }
     cache_$size()
   }
 
@@ -291,10 +335,32 @@ cache_mem <- function(
   # Private methods
   # ============================================================================
 
+  # Wrapper for cache_$remove() which also does bookkeeping of total_size_ and
+  # total_n_.
+  remove_ <- function(keys) {
+    if (length(keys) == 1) {
+      remove_one_(keys)
+    } else {
+      vapply(keys, remove_one_, TRUE)
+    }
+  }
+
+  remove_one_ <- function(key) {
+    if (!cache_$has(key)) {
+      return()
+    }
+
+    if (PRUNE_SIZE) {
+      total_size_ <<- total_size_ - cache_$get(key)$size
+    }
+    total_n_    <<- total_n_ - 1
+    cache_$remove(key)
+  }
+
   # Prunes a single object if it exceeds max_age. If the object does not
   # exceed max_age, or if the object doesn't exist, do nothing.
   maybe_prune_single_ <- function(key) {
-    if (!is.finite(max_age_)) return()
+    if (!PRUNE_SIZE) return()
 
     obj <- cache_$get(key)
     if (is.null(obj)) return()
@@ -302,7 +368,7 @@ cache_mem <- function(
     timediff <- as.numeric(Sys.time()) - obj$mtime
     if (timediff > max_age_) {
       log_(paste0("pruning single object exceeding max_age: Removing ", key))
-      cache_$remove(key)
+      remove_(key)
     }
   }
 
