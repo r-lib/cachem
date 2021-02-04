@@ -1,3 +1,8 @@
+cachem 1.0.3
+============
+
+* Addressed issues with timing-sensitive tests.
+
 cachem 1.0.2
 ============
 
