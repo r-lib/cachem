@@ -42,6 +42,10 @@ test_that("cache_disk: handling missing values", {
 
 
 test_that("cache_disk: pruning respects max_n", {
+  # Timing is apparently unreliable on CRAN, so skip tests there. It's possible
+  # that a heavily loaded system will have issues with these tests because of
+  # the time resolution.
+  skip_on_cran()
   d <- cache_disk(max_n = 3)
   # NOTE: The short delays after each item are meant to tests more reliable on
   # CI systems.
@@ -55,6 +59,7 @@ test_that("cache_disk: pruning respects max_n", {
 })
 
 test_that("cache_disk: pruning respects max_size", {
+  skip_on_cran()
   d <- cache_disk(max_size = 200)
   d$set("a", rnorm(100)); Sys.sleep(0.01)
   d$set("b", rnorm(100)); Sys.sleep(0.01)
@@ -75,6 +80,7 @@ test_that("cache_disk: pruning respects max_size", {
 
 # Issue shiny#3033
 test_that("cache_disk: pruning respects both max_n and max_size", {
+  skip_on_cran()
   d <- cache_disk(max_n = 3, max_size = 200)
   # Set some values. Use rnorm so that object size is large; a simple vector
   # like 1:100 will be stored very efficiently by R's ALTREP, and won't exceed
@@ -106,6 +112,7 @@ setfiletime_has_subsecond_resolution <- function() {
 }
 
 test_that('cache_disk: pruning with evict="lru"', {
+  skip_on_cran()
   # For lru tests, make sure there's sub-second resolution for
   # Sys.setFileTime(), because that's what the lru code uses to update times.
   skip_if_not(
@@ -132,6 +139,7 @@ test_that('cache_disk: pruning with evict="lru"', {
 })
 
 test_that('cache_disk: pruning with evict="fifo"', {
+  skip_on_cran()
   d <- cache_disk(max_n = 2, evict = "fifo")
   d$set("a", 1); Sys.sleep(0.01)
   d$set("b", 1); Sys.sleep(0.01)
@@ -173,5 +181,4 @@ test_that("Warnings for caching reference objects", {
   expect_silent(d$set("a", new.env()))
   expect_silent(d$set("a", function() NULL))
   expect_silent(d$set("a", fastmap()))
-
 })
