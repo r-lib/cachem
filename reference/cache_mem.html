@@ -75,7 +75,7 @@ the parameters max_size, max_age, max_n, and evict." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">cachem</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.0.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.0.3.9000</span>
       </span>
     </div>
 
@@ -238,11 +238,7 @@ and the cache will report it as a missing value.</p>
 from the cache according to an eviction policy. The available eviction
 policies are:</p>
 <dl>
-<dt><code>"lru"</code></dt><dd><p>Least Recently Used. The least recently used objects will be removed.
-This uses the filesystem's atime property. Some filesystems do not
-support atime, or have a very low atime resolution. The cache_mem will
-check for atime support, and if the filesystem does not support atime,
-a warning will be issued and the "fifo" policy will be used instead.</p></dd>
+<dt><code>"lru"</code></dt><dd><p>Least Recently Used. The least recently used objects will be removed.</p></dd>
 <dt><code>"fifo"</code></dt><dd><p>First-in-first-out. The oldest objects will be removed.</p></dd>
 
 </dl>
