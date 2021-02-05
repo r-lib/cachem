@@ -484,7 +484,7 @@ cache_mem <- function(
   # If evict=="lru", this will be sorted by atime.
   # If evict=="fifo", this will be sorted by mtime.
   get_metadata_ <- function() {
-    idxs <- !is.na(key_[seq_len(last_idx_)])
+    idxs <- !is.na(mtime_[seq_len(last_idx_)])
     idxs <- which(idxs)
     idxs <- rev(idxs)
 
