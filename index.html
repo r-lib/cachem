@@ -340,7 +340,7 @@
 <div id="layered-caches" class="section level2">
 <h2 class="hasAnchor">
 <a href="#layered-caches" class="anchor"></a>Layered caches</h2>
-<p>Multiple caches can be composed into a single cache, using <code><a href="reference/cache_layered.html">cache_layered()</a></code>. This can be used to create a multi-level cache. For example, we can create a layered cache with a very fast 100MB memory cache and a larger but slower 2GB disk cache:</p>
+<p>Multiple caches can be composed into a single cache, using <code><a href="reference/cache_layered.html">cache_layered()</a></code>. This can be used to create a multi-level cache. (Note thate <code><a href="reference/cache_layered.html">cache_layered()</a></code> is currently experimental.) For example, we can create a layered cache with a very fast 100MB memory cache and a larger but slower 2GB disk cache:</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cache_mem.html">cache_mem</a></span><span class="op">(</span>max_size <span class="op">=</span> <span class="fl">100</span> <span class="op">*</span> <span class="fl">1024</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span>
 <span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cache_disk.html">cache_disk</a></span><span class="op">(</span>max_size <span class="op">=</span> <span class="fl">2</span> <span class="op">*</span> <span class="fl">1024</span><span class="op">^</span><span class="fl">3</span><span class="op">)</span>
