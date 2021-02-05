@@ -275,7 +275,7 @@ cache_mem <- function(
       return(invisible(TRUE))
     }
 
-    info <- get_metadata_(reverse = TRUE)
+    info <- get_metadata_()
 
     if (DEBUG) {
       # Sanity checks
@@ -483,12 +483,11 @@ cache_mem <- function(
   # Returns data frame of info, with gaps removed.
   # If evict=="lru", this will be sorted by atime.
   # If evict=="fifo", this will be sorted by mtime.
-  get_metadata_ <- function(reverse = TRUE) {
+  get_metadata_ <- function() {
     idxs <- !is.na(key_[seq_len(last_idx_)])
     idxs <- which(idxs)
-    if (reverse) {
-      idxs <- rev(idxs)
-    }
+    idxs <- rev(idxs)
+
     # Return a list -- this basically same structure as a data frame, but
     # we're using a plain list to avoid data frame slowness
     list(
