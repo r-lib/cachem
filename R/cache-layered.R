@@ -1,5 +1,7 @@
 #' Compose any number of cache objects into a new, layered cache object
 #'
+#' Note that `cache_layered` is currently experimental.
+#'
 #' @param ... Cache objects to compose into a new, layered cache object.
 #' @inheritParams cache_disk
 #'

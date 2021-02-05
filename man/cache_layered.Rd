@@ -17,7 +17,7 @@ information will be written. To log to the console, use \code{stderr()} or
 A layered caching object, with class \code{cache_layered}.
 }
 \description{
-Compose any number of cache objects into a new, layered cache object
+Note that \code{cache_layered} is currently experimental.
 }
 \examples{
 

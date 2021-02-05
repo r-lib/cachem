@@ -413,9 +413,10 @@ if its age exceeds `max_age`, then it will be removed from the cache.
 ## Layered caches
 
 Multiple caches can be composed into a single cache, using
-`cache_layered()`. This can be used to create a multi-level cache. For
-example, we can create a layered cache with a very fast 100MB memory
-cache and a larger but slower 2GB disk cache:
+`cache_layered()`. This can be used to create a multi-level cache. (Note
+thate `cache_layered()` is currently experimental.) For example, we can
+create a layered cache with a very fast 100MB memory cache and a larger
+but slower 2GB disk cache:
 
 ``` r
 m <- cache_mem(max_size = 100 * 1024^2)
