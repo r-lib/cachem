@@ -314,7 +314,6 @@ cache_mem <- function(
 
     # 2. Remove objects if there are too many.
     if (PRUNE_BY_N && length(info$key) > max_n_) {
-      # ensure_info_is_sorted()
       rm_idx <- seq_along(info$key) > max_n_
       log_(paste0("prune max_n: Removing ", paste(info$key[rm_idx], collapse = ", ")))
       remove_(info$key[rm_idx])
@@ -327,7 +326,6 @@ cache_mem <- function(
 
     # 3. Remove objects if cache is too large.
     if (PRUNE_BY_SIZE && sum(info$size) > max_size_) {
-      # ensure_info_is_sorted()
       cum_size <- cumsum(info$size)
       rm_idx <- cum_size > max_size_
       log_(paste0("prune max_size: Removing ", paste(info$key[rm_idx], collapse = ", ")))
