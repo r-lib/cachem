@@ -215,9 +215,7 @@ cache_mem <- function(
 
     log_(paste0('get: key "', key, '" found'))
 
-    if (evict_ == "lru") {
-      update_atime_(key)
-    }
+    update_atime_(key)
 
     idx <- key_idx_map_$get(key)
     value_[[idx]]
@@ -401,6 +399,8 @@ cache_mem <- function(
 
   # Called when get() with lru. If fifo, no need to update
   update_atime_ <- function(key) {
+    if (evict_ != "lru") return()
+
     time <- as.numeric(Sys.time())
     idx <- key_idx_map_$get(key)
 
@@ -540,6 +540,8 @@ cache_mem <- function(
     if (!MAINTAIN_ATIME_SORT) {
       if (evict_ == "lru") {
         idxs <- idxs[order(atime_[idxs])]
+      } else {
+        idxs <- idxs[order(mtime_[idxs])]
       }
     }
 

@@ -100,6 +100,14 @@ test_that('cache_mem: pruning with evict="lru"', {
   d$get("b")
   d$set("f", 3); Sys.sleep(0.001)
   expect_identical(sort(d$keys()), c("b", "f"))
+
+  d <- cache_mem(max_n = 2, evict = "lru")
+  d$set("a", 1); Sys.sleep(0.001)
+  d$set("b", 1); Sys.sleep(0.001)
+  d$set("c", 1); Sys.sleep(0.001)
+  d$set("b", 2); Sys.sleep(0.001)
+  d$set("d", 2); Sys.sleep(0.001)
+  expect_identical(sort(d$keys()), c("b", "d"))
 })
 
 test_that('cache_mem: pruning with evict="fifo"', {
@@ -116,6 +124,14 @@ test_that('cache_mem: pruning with evict="fifo"', {
   d$get("b")
   d$set("f", 3); Sys.sleep(0.001)
   expect_identical(sort(d$keys()), c("e", "f"))
+
+  d <- cache_mem(max_n = 2, evict = "fifo")
+  d$set("a", 1); Sys.sleep(0.001)
+  d$set("b", 1); Sys.sleep(0.001)
+  d$set("c", 1); Sys.sleep(0.001)
+  d$set("b", 2); Sys.sleep(0.001)
+  d$set("d", 2); Sys.sleep(0.001)
+  expect_identical(sort(d$keys()), c("b", "d"))
 })
 
 test_that("Removed objects can be GC'd", {
