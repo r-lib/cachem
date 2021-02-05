@@ -117,3 +117,39 @@ test_that('cache_mem: pruning with evict="fifo"', {
   d$set("f", 3); Sys.sleep(0.001)
   expect_identical(sort(d$keys()), c("e", "f"))
 })
+
+test_that("Removed objects can be GC'd", {
+  mc <- cache_mem()
+  e <- new.env()
+  finalized <- FALSE
+  reg.finalizer(e, function(x) finalized <<- TRUE)
+  mc$set("e", e)
+  rm(e)
+  mc$set("x", 1)
+  gc()
+  expect_false(finalized)
+  expect_true(is.environment(mc$get("e")))
+})
+
+test_that("Pruned objects can be GC'd", {
+  # Cache is large enough to hold one environment and one number
+  mc <- cache_mem(max_size = object.size(new.env()) + object.size(1234))
+  e <- new.env()
+  finalized <- FALSE
+  reg.finalizer(e, function(x) finalized <<- TRUE)
+  mc$set("e", e)
+  rm(e)
+  mc$set("x", 1)
+  gc()
+  expect_false(finalized)
+  expect_true(is.environment(mc$get("e")))
+
+  # Get x so that the atime is updated
+  mc$get("x")
+
+  # e should have been pruned
+  mc$set("y", 2)
+  gc()
+  expect_true(finalized)
+  expect_true(is.key_missing(mc$get("e")))
+})
