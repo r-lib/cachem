@@ -282,7 +282,7 @@ cache_mem <- function(
       if (PRUNE_BY_SIZE && sum(info$size) != total_size_) {
         stop("Size mismatch")
       }
-      if (nrow(info) != total_n_) {
+      if (length(info$key) != total_n_) {
         stop("Count mismatch")
       }
     }
@@ -295,17 +295,27 @@ cache_mem <- function(
       if (any(rm_idx)) {
         log_(paste0("prune max_age: Removing ", paste(info$key[rm_idx], collapse = ", ")))
         remove_(info$key[rm_idx])
-        info <- info[!rm_idx, ]
+
+        # Trim all the vectors (need to do each individually since we're using a
+        # list of vectors instead of a data frame, for performance).
+        info$key   <- info$key  [!rm_idx]
+        info$size  <- info$size [!rm_idx]
+        info$mtime <- info$mtime[!rm_idx]
+        info$atime <- info$atime[!rm_idx]
       }
     }
 
     # 2. Remove objects if there are too many.
-    if (PRUNE_BY_N && nrow(info) > max_n_) {
+    if (PRUNE_BY_N && length(info$key) > max_n_) {
       # ensure_info_is_sorted()
-      rm_idx <- seq_len(nrow(info)) > max_n_
+      rm_idx <- seq_along(info$key) > max_n_
       log_(paste0("prune max_n: Removing ", paste(info$key[rm_idx], collapse = ", ")))
       remove_(info$key[rm_idx])
-      info <- info[!rm_idx, ]
+
+      info$key   <- info$key  [!rm_idx]
+      info$size  <- info$size [!rm_idx]
+      info$mtime <- info$mtime[!rm_idx]
+      info$atime <- info$atime[!rm_idx]
     }
 
     # 3. Remove objects if cache is too large.
@@ -315,7 +325,8 @@ cache_mem <- function(
       rm_idx <- cum_size > max_size_
       log_(paste0("prune max_size: Removing ", paste(info$key[rm_idx], collapse = ", ")))
       remove_(info$key[rm_idx])
-      # info <- info[!rm_idx, ]
+
+      # No need to trim vectors this time, since this is the last pruning step.
     }
 
     invisible(TRUE)
@@ -478,16 +489,14 @@ cache_mem <- function(
     if (reverse) {
       idxs <- rev(idxs)
     }
-    # Make a data frame, the fast way
-    x <- list(
+    # Return a list -- this basically same structure as a data frame, but
+    # we're using a plain list to avoid data frame slowness
+    list(
       key   = key_  [idxs],
       size  = size_ [idxs],
       mtime = mtime_[idxs],
       atime = atime_[idxs]
     )
-    attr(x, "class") <- "data.frame"
-    attr(x, "row.names") <- seq.int(length(idxs))
-    x
   }
 
   log_ <- function(text) {
