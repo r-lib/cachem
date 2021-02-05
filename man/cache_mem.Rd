@@ -117,10 +117,6 @@ policies are:
 \describe{
 \item{\code{"lru"}}{
 Least Recently Used. The least recently used objects will be removed.
-This uses the filesystem's atime property. Some filesystems do not
-support atime, or have a very low atime resolution. The cache_mem will
-check for atime support, and if the filesystem does not support atime,
-a warning will be issued and the "fifo" policy will be used instead.
 }
 \item{\code{"fifo"}}{
 First-in-first-out. The oldest objects will be removed.
