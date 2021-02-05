@@ -166,6 +166,25 @@ cache_mem <- function(
   # ============================================================================
   # Internal state
   # ============================================================================
+  # The keys, values, and metadata are stored in columnar format. The vectors
+  # key_, value_, size_, mtime_, and atime_ are the columns. Separate vectors
+  # are used instead of a data frame, because operations for modifying and
+  # growing vectors are much faster than the same operations on data frames.
+  #
+  # It uses a column-first format because a row-first format is much slower for
+  # doing the manipulations and computations that are needed for pruning, such
+  # as sorting by atime, and calculating a cumulative sum of sizes.
+  #
+  # For fast get() performance, there is also key_idx_map_, which maps between
+  # the key, and the "row" index in our "data frame".
+  #
+  # An older version of this code stored the value along with metadata (size,
+  # mtime, and atime) in a fastmap object, but this had poor performance for
+  # pruning operations. This is because, for pruning, it needs to fetch the
+  # metadata for all objects, then sort by atime (if evict="lru"), then take a
+  # cumulative sum of sizes. Fetching the metadata for all objects was slow, as
+  # was converting the resulting row-first data into column-first data. The
+  # current column-first approach is much, much faster.
   key_idx_map_  <- fastmap()
 
   key_          <- rep_len(NA_character_, INITIAL_SIZE)
@@ -176,7 +195,7 @@ cache_mem <- function(
 
   total_n_      <- 0L  # Total number of items
   total_size_   <- 0   # Total number of bytes used
-  last_idx_     <- 0L  # Most recent index used
+  last_idx_     <- 0L  # Most recent (and largest) index used
 
 
   # ============================================================================
