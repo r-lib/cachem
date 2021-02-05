@@ -137,6 +137,13 @@ cache_mem <- function(
   INITIAL_SIZE  <- 64L
   COMPACT_LIMIT <- 256L
   COMPACT_MULT  <- 2
+  # If TRUE, the data will be kept in the correct atime order each time get() is
+  # called, though the metadata log will grow by one entry each time. If FALSE,
+  # the metadata entry will be kept in place, but the atimes will not be kept in
+  # order; instead, the metadata will be sorted by atime each time prune() is
+  # called. The overall behavior is the same, but there are somewhat different
+  # performance characteristics.
+  MAINTAIN_ATIME_SORT <- FALSE
 
   # ============================================================================
   # Initialization
@@ -145,31 +152,31 @@ cache_mem <- function(
   if (!is.numeric(max_age))  stop("max_age must be a number. Use `Inf` for no limit.")
   if (!is.numeric(max_n))    stop("max_n must be a number. Use `Inf` for no limit.")
 
-  max_size_    <- max_size
-  max_age_     <- max_age
-  max_n_       <- max_n
-  evict_       <- match.arg(evict)
-  missing_     <- enquo(missing)
-  logfile_     <- logfile
+  max_size_     <- max_size
+  max_age_      <- max_age
+  max_n_        <- max_n
+  evict_        <- match.arg(evict)
+  missing_      <- enquo(missing)
+  logfile_      <- logfile
 
-  PRUNE_BY_SIZE   <- is.finite(max_size_)
-  PRUNE_BY_AGE    <- is.finite(max_age_)
-  PRUNE_BY_N      <- is.finite(max_n_)
+  PRUNE_BY_SIZE <- is.finite(max_size_)
+  PRUNE_BY_AGE  <- is.finite(max_age_)
+  PRUNE_BY_N    <- is.finite(max_n_)
 
   # ============================================================================
   # Internal state
   # ============================================================================
-  key_idx_map_ <- fastmap()
+  key_idx_map_  <- fastmap()
 
-  key_         <- rep_len(NA_character_, INITIAL_SIZE)
-  value_       <- vector("list",         INITIAL_SIZE)
-  size_        <- rep_len(NA_real_,      INITIAL_SIZE)
-  mtime_       <- rep_len(NA_real_,      INITIAL_SIZE)
-  atime_       <- rep_len(NA_real_,      INITIAL_SIZE)
+  key_          <- rep_len(NA_character_, INITIAL_SIZE)
+  value_        <- vector("list",         INITIAL_SIZE)
+  size_         <- rep_len(NA_real_,      INITIAL_SIZE)
+  mtime_        <- rep_len(NA_real_,      INITIAL_SIZE)
+  atime_        <- rep_len(NA_real_,      INITIAL_SIZE)
 
-  total_n_     <- 0L  # Total number of items
-  total_size_  <- 0   # Total number of bytes used
-  last_idx_    <- 0L  # Most recent index used
+  total_n_      <- 0L  # Total number of items
+  total_size_   <- 0   # Total number of bytes used
+  last_idx_     <- 0L  # Most recent index used
 
 
   # ============================================================================
@@ -364,27 +371,33 @@ cache_mem <- function(
       stop("Can't update atime because entry doesn't exist")
     }
 
-    if (idx == last_idx_) {
-      # last_idx_ entry; simply update time
-      atime_[idx] <<- time
-    } else {
-      # "Move" this entry to the end.
-      last_idx_ <<- last_idx_ + 1L
-      # Add new entry to end
-      key_idx_map_$set(key, last_idx_)
-      key_  [last_idx_]   <<- key
-      value_[[last_idx_]] <<- value_[[idx]]
-      size_ [last_idx_]   <<- size_ [idx]
-      mtime_[last_idx_]   <<- mtime_[idx]
-      atime_[last_idx_]   <<- time
+    if (MAINTAIN_ATIME_SORT) {
+      if (idx == last_idx_) {
+        # last_idx_ entry; simply update time
+        atime_[idx] <<- time
+      } else {
+        # "Move" this entry to the end.
+        last_idx_ <<- last_idx_ + 1L
+        # Add new entry to end
+        key_idx_map_$set(key, last_idx_)
+        key_  [last_idx_]   <<- key
+        value_[[last_idx_]] <<- value_[[idx]]
+        size_ [last_idx_]   <<- size_ [idx]
+        mtime_[last_idx_]   <<- mtime_[idx]
+        atime_[last_idx_]   <<- time
 
-      # Clear out old entry
-      key_  [idx] <<- NA_character_
-      value_[idx] <<- list(NULL)
-      size_ [idx] <<- NA_real_
-      mtime_[idx] <<- NA_real_
-      atime_[idx] <<- NA_real_
+        # Clear out old entry
+        key_  [idx] <<- NA_character_
+        value_[idx] <<- list(NULL)
+        size_ [idx] <<- NA_real_
+        mtime_[idx] <<- NA_real_
+        atime_[idx] <<- NA_real_
+      }
+
+    } else {
+      atime_[idx] <<- time
     }
+
   }
 
 
@@ -486,6 +499,13 @@ cache_mem <- function(
   get_metadata_ <- function() {
     idxs <- !is.na(mtime_[seq_len(last_idx_)])
     idxs <- which(idxs)
+
+    if (!MAINTAIN_ATIME_SORT) {
+      if (evict_ == "lru") {
+        idxs <- idxs[order(atime_[idxs])]
+      }
+    }
+
     idxs <- rev(idxs)
 
     # Return a list -- this basically same structure as a data frame, but
