@@ -216,33 +216,53 @@ cache_mem <- function(
       total_size_ <<- total_size_ + size
     }
 
-    idx <- key_idx_map_$get(key)
+    old_idx <- key_idx_map_$get(key)
 
-    if (!is.null(idx)) {
+    # We'll set this to TRUE if we need to append to the data; FALSE if we can
+    # modify the existing entry in place.
+    append <- NULL
+
+    if (!is.null(old_idx)) {
       # If there's an existing entry with this key, clear out its row, because
       # we'll be appending a new one later.
       if (PRUNE_BY_SIZE) {
-        total_size_ <<- total_size_ - size_[idx]
+        total_size_ <<- total_size_ - size_[old_idx]
       }
 
-      key_  [idx] <<- NA_character_
-      value_[idx] <<- list(NULL)
-      size_ [idx] <<- NA_real_
-      mtime_[idx] <<- NA_real_
-      atime_[idx] <<- NA_real_
+      if (MAINTAIN_ATIME_SORT  &&  old_idx != last_idx_) {
+        append <- TRUE
+
+        key_  [old_idx] <<- NA_character_
+        value_[old_idx] <<- list(NULL)
+        size_ [old_idx] <<- NA_real_
+        mtime_[old_idx] <<- NA_real_
+        atime_[old_idx] <<- NA_real_
+
+      } else {
+        append <- FALSE
+      }
 
     } else {
+      append <- TRUE
       total_n_ <<- total_n_ + 1L
     }
 
-    # Append to the data.
-    last_idx_ <<- last_idx_ + 1L
-    key_idx_map_$set(key, last_idx_)
-    key_  [last_idx_]   <<- key
-    value_[[last_idx_]] <<- value
-    size_ [last_idx_]   <<- size
-    mtime_[last_idx_]   <<- time
-    atime_[last_idx_]   <<- time
+    if (append) {
+      # If we're appending, update the last_idx_ and use it for storage.
+      last_idx_ <<- last_idx_ + 1L
+      key_idx_map_$set(key, last_idx_)
+      new_idx <- last_idx_
+
+    } else {
+      # Not appending; replace the old item in place.
+      new_idx <- old_idx
+    }
+
+    key_  [new_idx]   <<- key
+    value_[[new_idx]] <<- value
+    size_ [new_idx]   <<- size
+    mtime_[new_idx]   <<- time
+    atime_[new_idx]   <<- time
 
     prune()
 
