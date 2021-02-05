@@ -131,28 +131,45 @@ cache_mem <- function(
   logfile = NULL)
 {
   # ============================================================================
+  # Constants
+  # ============================================================================
+  DEBUG         <- TRUE
+  INITIAL_SIZE  <- 64L
+  COMPACT_LIMIT <- 256L
+  COMPACT_MULT  <- 2
+
+  # ============================================================================
   # Initialization
   # ============================================================================
   if (!is.numeric(max_size)) stop("max_size must be a number. Use `Inf` for no limit.")
   if (!is.numeric(max_age))  stop("max_age must be a number. Use `Inf` for no limit.")
   if (!is.numeric(max_n))    stop("max_n must be a number. Use `Inf` for no limit.")
 
-  cache_        <- fastmap()
-  max_size_     <- max_size
-  max_age_      <- max_age
-  max_n_        <- max_n
-  evict_        <- match.arg(evict)
-  missing_      <- enquo(missing)
-  logfile_      <- logfile
+  max_size_    <- max_size
+  max_age_     <- max_age
+  max_n_       <- max_n
+  evict_       <- match.arg(evict)
+  missing_     <- enquo(missing)
+  logfile_     <- logfile
 
-  total_n_      <- 0
-  total_size_   <- 0
+  PRUNE_BY_SIZE   <- is.finite(max_size_)
+  PRUNE_BY_AGE    <- is.finite(max_age_)
+  PRUNE_BY_N      <- is.finite(max_n_)
 
-  PRUNE_SIZE    <- is.finite(max_size_)
-  PRUNE_AGE     <- is.finite(max_age_)
-  PRUNE_N       <- is.finite(max_n_)
+  # ============================================================================
+  # Internal state
+  # ============================================================================
+  key_idx_map_ <- fastmap()
 
-  DEBUG         <- TRUE
+  key_         <- rep_len(NA_character_, INITIAL_SIZE)
+  value_       <- vector("list",         INITIAL_SIZE)
+  size_        <- rep_len(NA_real_,      INITIAL_SIZE)
+  mtime_       <- rep_len(NA_real_,      INITIAL_SIZE)
+  atime_       <- rep_len(NA_real_,      INITIAL_SIZE)
+
+  total_n_     <- 0L  # Total number of items
+  total_size_  <- 0   # Total number of bytes used
+  last_idx_    <- 0L  # Most recent index used
 
 
   # ============================================================================
@@ -164,20 +181,20 @@ cache_mem <- function(
 
     maybe_prune_single_(key)
 
-    if (!exists(key)) {
+    if (!key_idx_map_$has(key)) {
       log_(paste0('get: key "', key, '" is missing'))
       missing <- as_quosure(missing)
       return(eval_tidy(missing))
     }
 
     log_(paste0('get: key "', key, '" found'))
-    res <- cache_$get(key)
 
-    # Update the atime
-    res$atime <- as.numeric(Sys.time())
-    cache_$set(key, res)
+    if (evict_ == "lru") {
+      update_atime_(key)
+    }
 
-    res$value
+    idx <- key_idx_map_$get(key)
+    value_[[idx]]
   }
 
   set <- function(key, value) {
@@ -186,44 +203,52 @@ cache_mem <- function(
 
     time <- as.numeric(Sys.time())
 
-    has_key <- cache_$has(key)
-
-    if (!has_key) {
-      total_n_ <<- total_n_ + 1
-    }
-
-    # Only record size if we're actually using max_size for pruning.
-    if (PRUNE_SIZE) {
+    if (PRUNE_BY_SIZE) {
       # Reported size is rough! See ?object.size.
       size <- as.numeric(object.size(value))
       total_size_ <<- total_size_ + size
-
-      if (has_key) {
-        total_size_ <<- total_size_ - cache_$get(key)$size
-      }
-
-    } else {
-      size <- NA_real_
     }
 
-    cache_$set(key, list(
-      key = key,
-      value = value,
-      size = size,
-      mtime = time,
-      atime = time
-    ))
+    idx <- key_idx_map_$get(key)
+
+    if (!is.null(idx)) {
+      # If there's an existing entry with this key, clear out its row, because
+      # we'll be appending a new one later.
+      if (PRUNE_BY_SIZE) {
+        total_size_ <<- total_size_ - size_[idx]
+      }
+
+      key_  [idx] <<- NA_character_
+      value_[idx] <<- list(NULL)
+      size_ [idx] <<- NA_real_
+      mtime_[idx] <<- NA_real_
+      atime_[idx] <<- NA_real_
+
+    } else {
+      total_n_ <<- total_n_ + 1L
+    }
+
+    # Append to the data.
+    last_idx_ <<- last_idx_ + 1L
+    key_idx_map_$set(key, last_idx_)
+    key_  [last_idx_]   <<- key
+    value_[[last_idx_]] <<- value
+    size_ [last_idx_]   <<- size
+    mtime_[last_idx_]   <<- time
+    atime_[last_idx_]   <<- time
+
     prune()
+
     invisible(TRUE)
   }
 
   exists <- function(key) {
     validate_key(key)
-    cache_$has(key)
+    key_idx_map_$has(key)
   }
 
   keys <- function() {
-    cache_$keys()
+    key_idx_map_$keys()
   }
 
   remove <- function(key) {
@@ -235,7 +260,7 @@ cache_mem <- function(
 
   reset <- function() {
     log_(paste0('reset'))
-    cache_$reset()
+    key_idx_map_$reset()
     invisible(TRUE)
   }
 
@@ -243,17 +268,18 @@ cache_mem <- function(
     log_(paste0('prune'))
 
     # Quick check to see if we need to prune
-    if ((!PRUNE_SIZE || total_size_ <= max_size_) &&
-        (!PRUNE_N || total_n_ <= max_n_))
+    if ((!PRUNE_BY_SIZE || total_size_ <= max_size_) &&
+        (!PRUNE_BY_N    || total_n_    <= max_n_   ) &&
+        (!PRUNE_BY_AGE))
     {
       return(invisible(TRUE))
     }
 
-    info <- object_info_()
+    info <- get_metadata_(reverse = TRUE)
 
     if (DEBUG) {
       # Sanity checks
-      if (PRUNE_SIZE && sum(info$size) != total_size_) {
+      if (PRUNE_BY_SIZE && sum(info$size) != total_size_) {
         stop("Size mismatch")
       }
       if (nrow(info) != total_n_) {
@@ -262,7 +288,7 @@ cache_mem <- function(
     }
 
     # 1. Remove any objects where the age exceeds max age.
-    if (PRUNE_AGE) {
+    if (PRUNE_BY_AGE) {
       time <- as.numeric(Sys.time())
       timediff <- time - info$mtime
       rm_idx <- timediff > max_age_
@@ -273,26 +299,9 @@ cache_mem <- function(
       }
     }
 
-    # Sort objects by priority, according to eviction policy. The sorting is
-    # done in a function which can be called multiple times but only does
-    # the work the first time.
-    info_is_sorted <- FALSE
-    ensure_info_is_sorted <- function() {
-      if (info_is_sorted) return()
-
-      if (evict_ == "lru") {
-        info <<- info[order(info$atime, decreasing = TRUE), ]
-      } else if (evict_ == "fifo") {
-        info <<- info[order(info$mtime, decreasing = TRUE), ]
-      } else {
-        stop('Unknown eviction policy "', evict_, '"')
-      }
-      info_is_sorted <<- TRUE
-    }
-
     # 2. Remove objects if there are too many.
-    if (PRUNE_N && nrow(info) > max_n_) {
-      ensure_info_is_sorted()
+    if (PRUNE_BY_N && nrow(info) > max_n_) {
+      # ensure_info_is_sorted()
       rm_idx <- seq_len(nrow(info)) > max_n_
       log_(paste0("prune max_n: Removing ", paste(info$key[rm_idx], collapse = ", ")))
       remove_(info$key[rm_idx])
@@ -300,13 +309,13 @@ cache_mem <- function(
     }
 
     # 3. Remove objects if cache is too large.
-    if (PRUNE_SIZE && sum(info$size) > max_size_) {
-      ensure_info_is_sorted()
+    if (PRUNE_BY_SIZE && sum(info$size) > max_size_) {
+      # ensure_info_is_sorted()
       cum_size <- cumsum(info$size)
       rm_idx <- cum_size > max_size_
       log_(paste0("prune max_size: Removing ", paste(info$key[rm_idx], collapse = ", ")))
       remove_(info$key[rm_idx])
-      info <- info[!rm_idx, ]
+      # info <- info[!rm_idx, ]
     }
 
     invisible(TRUE)
@@ -314,9 +323,9 @@ cache_mem <- function(
 
   size <- function() {
     if (DEBUG) {
-      if (cache_$size() != total_n_) stop("n mismatch")
+      if (key_idx_map_$size() != total_n_) stop("n mismatch")
     }
-    cache_$size()
+    total_n_
   }
 
   info <- function() {
@@ -335,70 +344,150 @@ cache_mem <- function(
   # Private methods
   # ============================================================================
 
-  # Wrapper for cache_$remove() which also does bookkeeping of total_size_ and
-  # total_n_.
+  # Called when get() with lru. If fifo, no need to update
+  update_atime_ <- function(key) {
+    time <- as.numeric(Sys.time())
+    idx <- key_idx_map_$get(key)
+
+    if (is.null(idx)) {
+      stop("Can't update atime because entry doesn't exist")
+    }
+
+    if (idx == last_idx_) {
+      # last_idx_ entry; simply update time
+      atime_[idx] <<- time
+    } else {
+      # "Move" this entry to the end.
+      last_idx_ <<- last_idx_ + 1L
+      # Add new entry to end
+      key_idx_map_$set(key, last_idx_)
+      key_  [last_idx_]   <<- key
+      value_[[last_idx_]] <<- value_[[idx]]
+      size_ [last_idx_]   <<- size_ [idx]
+      mtime_[last_idx_]   <<- mtime_[idx]
+      atime_[last_idx_]   <<- time
+
+      # Clear out old entry
+      key_  [idx] <<- NA_character_
+      value_[idx] <<- list(NULL)
+      size_ [idx] <<- NA_real_
+      mtime_[idx] <<- NA_real_
+      atime_[idx] <<- NA_real_
+    }
+  }
+
+
   remove_ <- function(keys) {
     if (length(keys) == 1) {
       remove_one_(keys)
     } else {
       vapply(keys, remove_one_, TRUE)
     }
+
+    if (last_idx_ > COMPACT_LIMIT  &&  last_idx_ > total_n_ * COMPACT_MULT) {
+      compact_()
+    }
   }
 
   remove_one_ <- function(key) {
-    if (!cache_$has(key)) {
+    idx <- key_idx_map_$get(key)
+
+    if (is.null(idx)) {
       return()
     }
 
-    if (PRUNE_SIZE) {
-      total_size_ <<- total_size_ - cache_$get(key)$size
+    # Overall n and size bookkeeping
+    total_n_ <<- total_n_ - 1L
+    if (PRUNE_BY_SIZE) {
+      total_size_ <<- total_size_ - size_[idx]
     }
-    total_n_    <<- total_n_ - 1
-    cache_$remove(key)
+
+    # Clear out entry
+    key_  [idx] <<- NA_character_
+    value_[idx] <<- list(NULL)
+    size_ [idx] <<- NA_real_
+    mtime_[idx] <<- NA_real_
+    atime_[idx] <<- NA_real_
+
+    key_idx_map_$remove(key)
   }
 
   # Prunes a single object if it exceeds max_age. If the object does not
   # exceed max_age, or if the object doesn't exist, do nothing.
   maybe_prune_single_ <- function(key) {
-    if (!PRUNE_SIZE) return()
+    if (!PRUNE_BY_AGE) return()
 
-    obj <- cache_$get(key)
-    if (is.null(obj)) return()
-
-    timediff <- as.numeric(Sys.time()) - obj$mtime
-    if (timediff > max_age_) {
+    time <- as.numeric(Sys.time())
+    idx <- key_idx_map_$get(key)
+    if (time - mtime[idx] > max_age_) {
       log_(paste0("pruning single object exceeding max_age: Removing ", key))
       remove_(key)
     }
   }
 
-  object_info_ = function() {
-    objs <- cache_$as_list()
-    len  <- length(objs)
+  compact_ <- function() {
+    from_idxs <- key_[seq_len(last_idx_)]
+    from_idxs <- !is.na(from_idxs)
+    from_idxs <- which(from_idxs)
 
-    # Pre-allocate these vectors and fill them with a for loop. This is faster
-    # than calling vapply() multiple times to extract each one.
-    key   <- character(len)
-    size  <- numeric(len)
-    mtime <- numeric(len)
-    atime <- numeric(len)
+    if (DEBUG) stopifnot(total_n_ == length(from_idxs))
 
-    for (i in seq_len(len)) {
-      obj <- objs[[i]]
-
-      key[i]   <- obj$key
-      size[i]  <- obj$size
-      mtime[i] <- obj$mtime
-      atime[i] <- obj$atime
+    if (total_n_ == 0L) {
+      message("nothing to compact")
+      return()
     }
 
-    data.frame(
-      key   = key,
-      size  = size,
-      mtime = mtime,
-      atime = atime,
-      stringsAsFactors = FALSE
+    new_size <- ceiling(total_n_ * COMPACT_MULT)
+
+    # Allocate new vectors for metadata.
+    new_key_   <- rep_len(NA_character_, new_size)
+    new_value_ <- vector("list",         new_size)
+    new_size_  <- rep_len(NA_real_,      new_size)
+    new_mtime_ <- rep_len(NA_real_,      new_size)
+    new_atime_ <- rep_len(NA_real_,      new_size)
+
+    # Copy (and compact, removing gaps) from old vectors to new ones.
+    to_idxs <- seq_len(total_n_)
+    new_key_  [to_idxs] <- key_  [from_idxs]
+    new_value_[to_idxs] <- value_[from_idxs]
+    new_size_ [to_idxs] <- size_ [from_idxs]
+    new_mtime_[to_idxs] <- mtime_[from_idxs]
+    new_atime_[to_idxs] <- atime_[from_idxs]
+
+    # Replace old vectors with new ones.
+    key_   <<- new_key_
+    value_ <<- new_value_
+    size_  <<- new_size_
+    mtime_ <<- new_mtime_
+    atime_ <<- new_atime_
+
+    # Update the index values in the key-index map.
+    args <- to_idxs
+    names(args) <- key_[to_idxs]
+    key_idx_map_$mset(.list = args)
+
+    last_idx_ <<- total_n_
+  }
+
+  # Returns data frame of info, with gaps removed.
+  # If evict=="lru", this will be sorted by atime.
+  # If evict=="fifo", this will be sorted by mtime.
+  get_metadata_ <- function(reverse = TRUE) {
+    idxs <- !is.na(key_[seq_len(last_idx_)])
+    idxs <- which(idxs)
+    if (reverse) {
+      idxs <- rev(idxs)
+    }
+    # Make a data frame, the fast way
+    x <- list(
+      key   = key_  [idxs],
+      size  = size_ [idxs],
+      mtime = mtime_[idxs],
+      atime = atime_[idxs]
     )
+    attr(x, "class") <- "data.frame"
+    attr(x, "row.names") <- seq.int(length(idxs))
+    x
   }
 
   log_ <- function(text) {
