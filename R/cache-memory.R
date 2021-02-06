@@ -137,13 +137,13 @@ cache_mem <- function(
   INITIAL_SIZE  <- 64L
   COMPACT_LIMIT <- 256L
   COMPACT_MULT  <- 2
-  # If TRUE, the data will be kept in the correct atime order each time get() is
-  # called, though the metadata log will grow by one entry each time. If FALSE,
-  # the metadata entry will be kept in place, but the atimes will not be kept in
-  # order; instead, the metadata will be sorted by atime each time prune() is
-  # called. The overall behavior is the same, but there are somewhat different
-  # performance characteristics.
-  MAINTAIN_ATIME_SORT <- FALSE
+  # If TRUE, the data will be kept in the correct atime (for lru) or mtime (for
+  # fifo) order each time get() or set() is called, though the metadata log will
+  # grow by one entry each time. If FALSE, the metadata entry will be kept in
+  # place, but the atimes will not be kept in order; instead, the metadata will
+  # be sorted by atime each time prune() is called. The overall behavior is the
+  # same, but there are somewhat different performance characteristics.
+  MAINTAIN_TIME_SORT <- FALSE
 
   # ============================================================================
   # Initialization
@@ -246,7 +246,7 @@ cache_mem <- function(
         total_size_ <<- total_size_ - size_[old_idx]
       }
 
-      if (MAINTAIN_ATIME_SORT  &&  old_idx != last_idx_) {
+      if (MAINTAIN_TIME_SORT  &&  old_idx != last_idx_) {
         append <- TRUE
 
         key_  [old_idx] <<- NA_character_
@@ -408,7 +408,7 @@ cache_mem <- function(
       stop("Can't update atime because entry doesn't exist")
     }
 
-    if (MAINTAIN_ATIME_SORT) {
+    if (MAINTAIN_TIME_SORT) {
       if (idx == last_idx_) {
         # last_idx_ entry; simply update time
         atime_[idx] <<- time
@@ -537,7 +537,7 @@ cache_mem <- function(
     idxs <- !is.na(mtime_[seq_len(last_idx_)])
     idxs <- which(idxs)
 
-    if (!MAINTAIN_ATIME_SORT) {
+    if (!MAINTAIN_TIME_SORT) {
       if (evict_ == "lru") {
         idxs <- idxs[order(atime_[idxs])]
       } else {
