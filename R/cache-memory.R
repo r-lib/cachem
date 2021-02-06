@@ -139,10 +139,11 @@ cache_mem <- function(
   COMPACT_MULT  <- 2
   # If TRUE, the data will be kept in the correct atime (for lru) or mtime (for
   # fifo) order each time get() or set() is called, though the metadata log will
-  # grow by one entry each time. If FALSE, the metadata entry will be kept in
-  # place, but the atimes will not be kept in order; instead, the metadata will
-  # be sorted by atime each time prune() is called. The overall behavior is the
-  # same, but there are somewhat different performance characteristics.
+  # grow by one entry each time (it will also occasionally be compacted). If
+  # FALSE, the metadata entry will be kept in place, but the atimes/mtimes will
+  # not be kept in order; instead, the metadata will be sorted by atime/mtime
+  # each time prune() is called. The overall behavior is the same, but there are
+  # somewhat different performance characteristics.
   MAINTAIN_TIME_SORT <- FALSE
 
   # ============================================================================
@@ -265,7 +266,11 @@ cache_mem <- function(
     }
 
     if (append) {
-      # If we're appending, update the last_idx_ and use it for storage.
+      # If we're appending, update the last_idx_ and use it for storage. This
+      # assign past the end of the vector. As of R 3.4, this grows the vector in
+      # place if possible, and is generally very fast, because vectors are
+      # allocated with extra memory at the end. For older versions of R, this
+      # can be very slow.
       last_idx_ <<- last_idx_ + 1L
       key_idx_map_$set(key, last_idx_)
       new_idx <- last_idx_
@@ -415,7 +420,7 @@ cache_mem <- function(
       } else {
         # "Move" this entry to the end.
         last_idx_ <<- last_idx_ + 1L
-        # Add new entry to end
+        # Add new entry to end. Fast on R 3.4 and above, slow on older versions.
         key_idx_map_$set(key, last_idx_)
         key_  [last_idx_]   <<- key
         value_[[last_idx_]] <<- value_[[idx]]
