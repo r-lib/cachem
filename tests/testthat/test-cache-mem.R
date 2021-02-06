@@ -134,6 +134,15 @@ test_that('cache_mem: pruning with evict="fifo"', {
   expect_identical(sort(d$keys()), c("b", "d"))
 })
 
+test_that("Pruning by max_age", {
+  skip_on_cran()
+  d <- cache_mem(max_age = 0.5)
+  d$set("a", 1)
+  expect_identical(d$get("a"), 1)
+  Sys.sleep(0.6)
+  expect_identical(d$get("a"), key_missing())
+})
+
 test_that("Removed objects can be GC'd", {
   mc <- cache_mem()
   e <- new.env()
@@ -161,9 +170,11 @@ test_that("Pruned objects can be GC'd", {
   expect_true(is.environment(mc$get("e")))
 
   # Get x so that the atime is updated
+  Sys.sleep(0.001)
   mc$get("x")
+  Sys.sleep(0.001)
 
-  # e should have been pruned
+  # e should be pruned when we add another item
   mc$set("y", 2)
   gc()
   expect_true(finalized)
