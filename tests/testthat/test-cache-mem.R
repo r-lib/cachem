@@ -140,12 +140,14 @@ test_that('cache_mem: pruning with evict="fifo"', {
 
 test_that("Pruning by max_age", {
   skip_on_cran()
+
   # Should prune target item on get()
   d <- cache_mem(max_age = 0.25)
   d$set("a", 1)
   expect_identical(d$get("a"), 1)
   Sys.sleep(0.3)
   expect_identical(d$get("a"), key_missing())
+  expect_identical(d$get("x"), key_missing())
 
   # Should prune all items on set()
   d <- cache_mem(max_age = 0.25)
@@ -154,6 +156,39 @@ test_that("Pruning by max_age", {
   Sys.sleep(0.3)
   d$set("b", 1)
   expect_identical(d$keys(), "b")
+
+  # Should prune target item on exists()
+  d <- cache_mem(max_age = 0.25)
+  d$set("a", 1)
+  expect_identical(d$get("a"), 1)
+  expect_true(d$exists("a"))
+  expect_false(d$exists("b"))
+  Sys.sleep(0.15)
+  d$set("b", 1)
+  expect_true(d$exists("a"))
+  expect_true(d$exists("b"))
+  Sys.sleep(0.15)
+  expect_false(d$exists("a"))
+  expect_true(d$exists("b"))
+
+  # Should prune all items on keys()
+  d <- cache_mem(max_age = 0.25)
+  d$set("a", 1)
+  expect_identical(d$keys(), "a")
+  Sys.sleep(0.15)
+  d$set("b", 1)
+  Sys.sleep(0.15)
+  expect_identical(d$keys(), "b")
+
+  # Should prune all items on size()
+  d <- cache_mem(max_age = 0.25)
+  d$set("a", 1)
+  expect_identical(d$size(), 1L)
+  Sys.sleep(0.15)
+  d$set("b", 1)
+  expect_identical(d$size(), 2L)
+  Sys.sleep(0.15)
+  expect_identical(d$size(), 1L)
 })
 
 test_that("Removed objects can be GC'd", {

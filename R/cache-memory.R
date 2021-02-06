@@ -212,15 +212,6 @@ cache_mem <- function(
     validate_key(key)
 
     idx <- key_idx_map_$get(key)
-    time <- as.numeric(Sys.time())
-
-    # Prunes a single object if it exceeds max_age. If the object does not
-    # exceed max_age, or if the object doesn't exist, do nothing.
-    if (PRUNE_BY_AGE  &&  time - mtime_[idx] > max_age_) {
-      log_(paste0("pruning single object exceeding max_age: Removing ", key))
-      remove_(key)
-      idx <- NULL
-    }
 
     if (is.null(idx)) {
       log_(paste0('get: key "', key, '" is missing'))
@@ -228,12 +219,24 @@ cache_mem <- function(
       return(eval_tidy(missing))
     }
 
+    # Prunes a single object if it exceeds max_age. If the object does not
+    # exceed max_age, or if the object doesn't exist, do nothing.
+    if (PRUNE_BY_AGE) {
+      time <- as.numeric(Sys.time())
+      if (time - mtime_[idx] > max_age_) {
+        log_(paste0("pruning single object exceeding max_age: Removing ", key))
+        remove_(key)
+        missing <- as_quosure(missing)
+        return(eval_tidy(missing))
+      }
+    }
+
     log_(paste0('get: key "', key, '" found'))
 
     # Get the value before updating atime, because that can move items around
     # when MAINTAIN_TIME_SORT is TRUE.
     value <- value_[[idx]]
-    update_atime_(key, time)
+    update_atime_(key)
     value
   }
 
@@ -309,10 +312,40 @@ cache_mem <- function(
 
   exists <- function(key) {
     validate_key(key)
-    key_idx_map_$has(key)
+
+    if (PRUNE_BY_AGE) {
+      # Prunes a single object if it exceeds max_age. This code path looks a bit
+      # complicated for what it does, but this is for performance.
+      idx <- key_idx_map_$get(key)
+      if (is.null(idx)) {
+        return(FALSE)
+      }
+
+      time <- as.numeric(Sys.time())
+      if (time - mtime_[idx] > max_age_) {
+        log_(paste0("pruning single object exceeding max_age: Removing ", key))
+        remove_(key)
+        return(FALSE)
+      }
+
+      return(TRUE)
+
+    } else {
+      key_idx_map_$has(key)
+    }
   }
 
   keys <- function() {
+    if (PRUNE_BY_AGE) {
+      # When there's no max_age, pruning is only needed when set() is called,
+      # because that's the only way for max_n or max_size to be exceeded. But
+      # when there is a max_age, we might need to prune here simply because time
+      # has passed. (This could be made faster by having an option to prune() to
+      # only prunes by age (and not by n or size). It could also avoid sorting
+      # the metadata.)
+      prune()
+    }
+
     key_idx_map_$keys()
   }
 
@@ -396,6 +429,10 @@ cache_mem <- function(
   }
 
   size <- function() {
+    if (PRUNE_BY_AGE) {
+      # See note in exists() about why we prune here.
+      prune()
+    }
     if (DEBUG) {
       if (key_idx_map_$size() != total_n_) stop("n mismatch")
     }
@@ -419,10 +456,11 @@ cache_mem <- function(
   # ============================================================================
 
   # Called when get() with lru. If fifo, no need to update.
-  update_atime_ <- function(key, time) {
+  update_atime_ <- function(key) {
     if (evict_ != "lru") return()
 
     idx <- key_idx_map_$get(key)
+    time <- as.numeric(Sys.time())
 
     if (is.null(idx)) {
       stop("Can't update atime because entry doesn't exist")
