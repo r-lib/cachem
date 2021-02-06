@@ -140,10 +140,15 @@ cache_mem <- function(
   # If TRUE, the data will be kept in the correct atime (for lru) or mtime (for
   # fifo) order each time get() or set() is called, though the metadata log will
   # grow by one entry each time (it will also occasionally be compacted). If
-  # FALSE, the metadata entry will be kept in place, but the atimes/mtimes will
-  # not be kept in order; instead, the metadata will be sorted by atime/mtime
-  # each time prune() is called. The overall behavior is the same, but there are
-  # somewhat different performance characteristics.
+  # FALSE, the metadata entry will be kept in place (so the metadata log won't
+  # grow as quickly), but the atimes/mtimes will not be kept in order; instead,
+  # the metadata will be sorted by atime/mtime each time prune() is called (and
+  # prune() is called by set()). The overall behavior is the same, but there are
+  # somewhat different performance characteristics. The tradeoff is either
+  # growing the log for every get() (and needing to occasionally compact it), or
+  # having to sort it every time set() is called. Sorting data of a reasonable
+  # size (up to around 1e5) is fast in R. For larger numbers of items it may be
+  # better to set this to TRUE.
   MAINTAIN_TIME_SORT <- FALSE
 
   # ============================================================================
