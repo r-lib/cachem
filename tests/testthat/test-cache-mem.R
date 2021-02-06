@@ -53,7 +53,7 @@ test_that("cache_mem: pruning respects max_n", {
 })
 
 test_that("cache_mem: pruning respects max_size", {
-  d <- cache_mem(max_size = 200)
+  d <- cache_mem(max_size = object.size(123) * 3)
   d$set("a", rnorm(100)); Sys.sleep(0.001)
   d$set("b", rnorm(100)); Sys.sleep(0.001)
   d$set("c", 1);          Sys.sleep(0.001)
@@ -69,7 +69,7 @@ test_that("cache_mem: pruning respects max_size", {
 })
 
 test_that("cache_mem: pruning respects both max_n and max_size", {
-  d <- cache_mem(max_n = 3, max_size = 200)
+  d <- cache_mem(max_n = 3, max_size = object.size(123) * 3)
   # Set some values. Use rnorm so that object size is large; a simple vector
   # like 1:100 will be stored very efficiently by R's ALTREP, and won't exceed
   # the max_size. We want each of these objects to exceed max_size so that
@@ -82,8 +82,12 @@ test_that("cache_mem: pruning respects both max_n and max_size", {
   d$set("f", 1);          Sys.sleep(0.001)
   d$set("g", 1);          Sys.sleep(0.001)
   d$set("h", 1);          Sys.sleep(0.001)
-  d$set("i", 1);          Sys.sleep(0.001)
-  expect_identical(sort(d$keys()), c("g", "h", "i"))
+  expect_identical(sort(d$keys()), c("f", "g", "h"))
+
+  # This will cause f to be pruned (due to max_n) and g to be pruned (due to
+  # max_size).
+  d$set("i", c(2, 3));    Sys.sleep(0.001)
+  expect_identical(sort(d$keys()), c("h", "i"))
 })
 
 test_that('cache_mem: pruning with evict="lru"', {
@@ -136,11 +140,20 @@ test_that('cache_mem: pruning with evict="fifo"', {
 
 test_that("Pruning by max_age", {
   skip_on_cran()
-  d <- cache_mem(max_age = 0.5)
+  # Should prune target item on get()
+  d <- cache_mem(max_age = 0.25)
   d$set("a", 1)
   expect_identical(d$get("a"), 1)
-  Sys.sleep(0.6)
+  Sys.sleep(0.3)
   expect_identical(d$get("a"), key_missing())
+
+  # Should prune all items on set()
+  d <- cache_mem(max_age = 0.25)
+  d$set("a", 1)
+  expect_identical(d$get("a"), 1)
+  Sys.sleep(0.3)
+  d$set("b", 1)
+  expect_identical(d$keys(), "b")
 })
 
 test_that("Removed objects can be GC'd", {
