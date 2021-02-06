@@ -206,9 +206,18 @@ cache_mem <- function(
     log_(paste0('get: key "', key, '"'))
     validate_key(key)
 
-    maybe_prune_single_(key)
+    idx <- key_idx_map_$get(key)
+    time <- as.numeric(Sys.time())
 
-    if (!key_idx_map_$has(key)) {
+    # Prunes a single object if it exceeds max_age. If the object does not
+    # exceed max_age, or if the object doesn't exist, do nothing.
+    if (PRUNE_BY_AGE  &&  time - mtime_[idx] > max_age_) {
+      log_(paste0("pruning single object exceeding max_age: Removing ", key))
+      remove_(key)
+      idx <- NULL
+    }
+
+    if (is.null(idx)) {
       log_(paste0('get: key "', key, '" is missing'))
       missing <- as_quosure(missing)
       return(eval_tidy(missing))
@@ -216,10 +225,11 @@ cache_mem <- function(
 
     log_(paste0('get: key "', key, '" found'))
 
-    update_atime_(key)
-
-    idx <- key_idx_map_$get(key)
-    value_[[idx]]
+    # Get the value before updating atime, because that can move items around
+    # when MAINTAIN_TIME_SORT is TRUE.
+    value <- value_[[idx]]
+    update_atime_(key, time)
+    value
   }
 
   set <- function(key, value) {
@@ -270,7 +280,8 @@ cache_mem <- function(
       # assign past the end of the vector. As of R 3.4, this grows the vector in
       # place if possible, and is generally very fast, because vectors are
       # allocated with extra memory at the end. For older versions of R, this
-      # can be very slow.
+      # can be very slow because a copy of the whole vector must be made each
+      # time.
       last_idx_ <<- last_idx_ + 1L
       key_idx_map_$set(key, last_idx_)
       new_idx <- last_idx_
@@ -402,11 +413,10 @@ cache_mem <- function(
   # Private methods
   # ============================================================================
 
-  # Called when get() with lru. If fifo, no need to update
-  update_atime_ <- function(key) {
+  # Called when get() with lru. If fifo, no need to update.
+  update_atime_ <- function(key, time) {
     if (evict_ != "lru") return()
 
-    time <- as.numeric(Sys.time())
     idx <- key_idx_map_$get(key)
 
     if (is.null(idx)) {
@@ -476,19 +486,6 @@ cache_mem <- function(
     atime_[idx] <<- NA_real_
 
     key_idx_map_$remove(key)
-  }
-
-  # Prunes a single object if it exceeds max_age. If the object does not
-  # exceed max_age, or if the object doesn't exist, do nothing.
-  maybe_prune_single_ <- function(key) {
-    if (!PRUNE_BY_AGE) return()
-
-    time <- as.numeric(Sys.time())
-    idx <- key_idx_map_$get(key)
-    if (time - mtime[idx] > max_age_) {
-      log_(paste0("pruning single object exceeding max_age: Removing ", key))
-      remove_(key)
-    }
   }
 
   compact_ <- function() {
