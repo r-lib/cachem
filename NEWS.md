@@ -1,5 +1,7 @@
-cachem 1.0.3.9000
+cachem 1.0.3.9001
 ============
+
+* More pruning speed enhancements for `cache_mem()`. (#7)
 
 cachem 1.0.3
 ============

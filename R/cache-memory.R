@@ -131,18 +131,78 @@ cache_mem <- function(
   logfile = NULL)
 {
   # ============================================================================
+  # Constants
+  # ============================================================================
+  DEBUG         <- TRUE
+  INITIAL_SIZE  <- 64L
+  COMPACT_LIMIT <- 256L
+  COMPACT_MULT  <- 2
+  # If TRUE, the data will be kept in the correct atime (for lru) or mtime (for
+  # fifo) order each time get() or set() is called, though the metadata log will
+  # grow by one entry each time (it will also occasionally be compacted). If
+  # FALSE, the metadata entry will be kept in place (so the metadata log won't
+  # grow as quickly), but the atimes/mtimes will not be kept in order; instead,
+  # the metadata will be sorted by atime/mtime each time prune() is called (and
+  # prune() is called by set()). The overall behavior is the same, but there are
+  # somewhat different performance characteristics. The tradeoff is either
+  # growing the log for every get() (and needing to occasionally compact it), or
+  # having to sort it every time set() is called. Sorting data of a reasonable
+  # size (up to around 1e5) is fast in R. For larger numbers of items it may be
+  # better to set this to TRUE.
+  MAINTAIN_TIME_SORT <- FALSE
+
+  # ============================================================================
   # Initialization
   # ============================================================================
   if (!is.numeric(max_size)) stop("max_size must be a number. Use `Inf` for no limit.")
   if (!is.numeric(max_age))  stop("max_age must be a number. Use `Inf` for no limit.")
   if (!is.numeric(max_n))    stop("max_n must be a number. Use `Inf` for no limit.")
-  cache_        <- fastmap()
+
   max_size_     <- max_size
   max_age_      <- max_age
   max_n_        <- max_n
   evict_        <- match.arg(evict)
   missing_      <- enquo(missing)
   logfile_      <- logfile
+
+  PRUNE_BY_SIZE <- is.finite(max_size_)
+  PRUNE_BY_AGE  <- is.finite(max_age_)
+  PRUNE_BY_N    <- is.finite(max_n_)
+
+  # ============================================================================
+  # Internal state
+  # ============================================================================
+  # The keys, values, and metadata are stored in columnar format. The vectors
+  # key_, value_, size_, mtime_, and atime_ are the columns. Separate vectors
+  # are used instead of a data frame, because operations for modifying and
+  # growing vectors are much faster than the same operations on data frames.
+  #
+  # It uses a column-first format because a row-first format is much slower for
+  # doing the manipulations and computations that are needed for pruning, such
+  # as sorting by atime, and calculating a cumulative sum of sizes.
+  #
+  # For fast get() performance, there is also key_idx_map_, which maps between
+  # the key, and the "row" index in our "data frame".
+  #
+  # An older version of this code stored the value along with metadata (size,
+  # mtime, and atime) in a fastmap object, but this had poor performance for
+  # pruning operations. This is because, for pruning, it needs to fetch the
+  # metadata for all objects, then sort by atime (if evict="lru"), then take a
+  # cumulative sum of sizes. Fetching the metadata for all objects was slow, as
+  # was converting the resulting row-first data into column-first data. The
+  # current column-first approach is much, much faster.
+  key_idx_map_  <- fastmap()
+
+  key_          <- rep_len(NA_character_, INITIAL_SIZE)
+  value_        <- vector("list",         INITIAL_SIZE)
+  size_         <- rep_len(NA_real_,      INITIAL_SIZE)
+  mtime_        <- rep_len(NA_real_,      INITIAL_SIZE)
+  atime_        <- rep_len(NA_real_,      INITIAL_SIZE)
+
+  total_n_      <- 0L  # Total number of items
+  total_size_   <- 0   # Total number of bytes used
+  last_idx_     <- 0L  # Most recent (and largest) index used
+
 
   # ============================================================================
   # Public methods
@@ -151,22 +211,30 @@ cache_mem <- function(
     log_(paste0('get: key "', key, '"'))
     validate_key(key)
 
-    maybe_prune_single_(key)
+    idx <- key_idx_map_$get(key)
+    time <- as.numeric(Sys.time())
 
-    if (!exists(key)) {
+    # Prunes a single object if it exceeds max_age. If the object does not
+    # exceed max_age, or if the object doesn't exist, do nothing.
+    if (PRUNE_BY_AGE  &&  time - mtime_[idx] > max_age_) {
+      log_(paste0("pruning single object exceeding max_age: Removing ", key))
+      remove_(key)
+      idx <- NULL
+    }
+
+    if (is.null(idx)) {
       log_(paste0('get: key "', key, '" is missing'))
       missing <- as_quosure(missing)
       return(eval_tidy(missing))
     }
 
     log_(paste0('get: key "', key, '" found'))
-    res <- cache_$get(key)
 
-    # Update the atime
-    res$atime <- as.numeric(Sys.time())
-    cache_$set(key, res)
-
-    res$value
+    # Get the value before updating atime, because that can move items around
+    # when MAINTAIN_TIME_SORT is TRUE.
+    value <- value_[[idx]]
+    update_atime_(key, time)
+    value
   }
 
   set <- function(key, value) {
@@ -175,104 +243,163 @@ cache_mem <- function(
 
     time <- as.numeric(Sys.time())
 
-    # Only record size if we're actually using max_size for pruning.
-    if (is.finite(max_size_)) {
+    if (PRUNE_BY_SIZE) {
       # Reported size is rough! See ?object.size.
       size <- as.numeric(object.size(value))
-    } else {
-      size <- NULL
+      total_size_ <<- total_size_ + size
     }
 
-    cache_$set(key, list(
-      key = key,
-      value = value,
-      size = size,
-      mtime = time,
-      atime = time
-    ))
+    old_idx <- key_idx_map_$get(key)
+
+    # We'll set this to TRUE if we need to append to the data; FALSE if we can
+    # modify the existing entry in place.
+    append <- NULL
+
+    if (!is.null(old_idx)) {
+      # If there's an existing entry with this key, clear out its row, because
+      # we'll be appending a new one later.
+      if (PRUNE_BY_SIZE) {
+        total_size_ <<- total_size_ - size_[old_idx]
+      }
+
+      if (MAINTAIN_TIME_SORT  &&  old_idx != last_idx_) {
+        append <- TRUE
+
+        key_  [old_idx] <<- NA_character_
+        value_[old_idx] <<- list(NULL)
+        size_ [old_idx] <<- NA_real_
+        mtime_[old_idx] <<- NA_real_
+        atime_[old_idx] <<- NA_real_
+
+      } else {
+        append <- FALSE
+      }
+
+    } else {
+      append <- TRUE
+      total_n_ <<- total_n_ + 1L
+    }
+
+    if (append) {
+      # If we're appending, update the last_idx_ and use it for storage. This
+      # assign past the end of the vector. As of R 3.4, this grows the vector in
+      # place if possible, and is generally very fast, because vectors are
+      # allocated with extra memory at the end. For older versions of R, this
+      # can be very slow because a copy of the whole vector must be made each
+      # time.
+      last_idx_ <<- last_idx_ + 1L
+      key_idx_map_$set(key, last_idx_)
+      new_idx <- last_idx_
+
+    } else {
+      # Not appending; replace the old item in place.
+      new_idx <- old_idx
+    }
+
+    key_  [new_idx]   <<- key
+    value_[[new_idx]] <<- value
+    size_ [new_idx]   <<- size
+    mtime_[new_idx]   <<- time
+    atime_[new_idx]   <<- time
+
     prune()
+
     invisible(TRUE)
   }
 
   exists <- function(key) {
     validate_key(key)
-    cache_$has(key)
+    key_idx_map_$has(key)
   }
 
   keys <- function() {
-    cache_$keys()
+    key_idx_map_$keys()
   }
 
   remove <- function(key) {
     log_(paste0('remove: key "', key, '"'))
     validate_key(key)
-    cache_$remove(key)
+    remove_(key)
     invisible(TRUE)
   }
 
   reset <- function() {
     log_(paste0('reset'))
-    cache_$reset()
+    key_idx_map_$reset()
     invisible(TRUE)
   }
 
   prune <- function() {
     log_(paste0('prune'))
-    info <- object_info_()
+
+    # Quick check to see if we need to prune
+    if ((!PRUNE_BY_SIZE || total_size_ <= max_size_) &&
+        (!PRUNE_BY_N    || total_n_    <= max_n_   ) &&
+        (!PRUNE_BY_AGE))
+    {
+      return(invisible(TRUE))
+    }
+
+    info <- get_metadata_()
+
+    if (DEBUG) {
+      # Sanity checks
+      if (PRUNE_BY_SIZE && sum(info$size) != total_size_) {
+        stop("Size mismatch")
+      }
+      if (length(info$key) != total_n_) {
+        stop("Count mismatch")
+      }
+    }
 
     # 1. Remove any objects where the age exceeds max age.
-    if (is.finite(max_age_)) {
+    if (PRUNE_BY_AGE) {
       time <- as.numeric(Sys.time())
       timediff <- time - info$mtime
       rm_idx <- timediff > max_age_
       if (any(rm_idx)) {
         log_(paste0("prune max_age: Removing ", paste(info$key[rm_idx], collapse = ", ")))
-        cache_$remove(info$key[rm_idx])
-        info <- info[!rm_idx, ]
-      }
-    }
+        remove_(info$key[rm_idx])
 
-    # Sort objects by priority, according to eviction policy. The sorting is
-    # done in a function which can be called multiple times but only does
-    # the work the first time.
-    info_is_sorted <- FALSE
-    ensure_info_is_sorted <- function() {
-      if (info_is_sorted) return()
-
-      if (evict_ == "lru") {
-        info <<- info[order(info$atime, decreasing = TRUE), ]
-      } else if (evict_ == "fifo") {
-        info <<- info[order(info$mtime, decreasing = TRUE), ]
-      } else {
-        stop('Unknown eviction policy "', evict_, '"')
+        # Trim all the vectors (need to do each individually since we're using a
+        # list of vectors instead of a data frame, for performance).
+        info$key   <- info$key  [!rm_idx]
+        info$size  <- info$size [!rm_idx]
+        info$mtime <- info$mtime[!rm_idx]
+        info$atime <- info$atime[!rm_idx]
       }
-      info_is_sorted <<- TRUE
     }
 
     # 2. Remove objects if there are too many.
-    if (is.finite(max_n_) && nrow(info) > max_n_) {
-      ensure_info_is_sorted()
-      rm_idx <- seq_len(nrow(info)) > max_n_
+    if (PRUNE_BY_N && length(info$key) > max_n_) {
+      rm_idx <- seq_along(info$key) > max_n_
       log_(paste0("prune max_n: Removing ", paste(info$key[rm_idx], collapse = ", ")))
-      cache_$remove(info$key[rm_idx])
-      info <- info[!rm_idx, ]
+      remove_(info$key[rm_idx])
+
+      info$key   <- info$key  [!rm_idx]
+      info$size  <- info$size [!rm_idx]
+      info$mtime <- info$mtime[!rm_idx]
+      info$atime <- info$atime[!rm_idx]
     }
 
     # 3. Remove objects if cache is too large.
-    if (is.finite(max_size_) && sum(info$size) > max_size_) {
-      ensure_info_is_sorted()
+    if (PRUNE_BY_SIZE && sum(info$size) > max_size_) {
       cum_size <- cumsum(info$size)
       rm_idx <- cum_size > max_size_
       log_(paste0("prune max_size: Removing ", paste(info$key[rm_idx], collapse = ", ")))
-      cache_$remove(info$key[rm_idx])
-      info <- info[!rm_idx, ]
+      remove_(info$key[rm_idx])
+
+      # No need to trim vectors this time, since this is the last pruning step.
     }
 
     invisible(TRUE)
   }
 
   size <- function() {
-    cache_$size()
+    if (DEBUG) {
+      if (key_idx_map_$size() != total_n_) stop("n mismatch")
+    }
+    total_n_
   }
 
   info <- function() {
@@ -291,47 +418,149 @@ cache_mem <- function(
   # Private methods
   # ============================================================================
 
-  # Prunes a single object if it exceeds max_age. If the object does not
-  # exceed max_age, or if the object doesn't exist, do nothing.
-  maybe_prune_single_ <- function(key) {
-    if (!is.finite(max_age_)) return()
+  # Called when get() with lru. If fifo, no need to update.
+  update_atime_ <- function(key, time) {
+    if (evict_ != "lru") return()
 
-    obj <- cache_$get(key)
-    if (is.null(obj)) return()
+    idx <- key_idx_map_$get(key)
 
-    timediff <- as.numeric(Sys.time()) - obj$mtime
-    if (timediff > max_age_) {
-      log_(paste0("pruning single object exceeding max_age: Removing ", key))
-      cache_$remove(key)
+    if (is.null(idx)) {
+      stop("Can't update atime because entry doesn't exist")
+    }
+
+    if (MAINTAIN_TIME_SORT) {
+      if (idx == last_idx_) {
+        # last_idx_ entry; simply update time
+        atime_[idx] <<- time
+      } else {
+        # "Move" this entry to the end.
+        last_idx_ <<- last_idx_ + 1L
+        # Add new entry to end. Fast on R 3.4 and above, slow on older versions.
+        key_idx_map_$set(key, last_idx_)
+        key_  [last_idx_]   <<- key
+        value_[[last_idx_]] <<- value_[[idx]]
+        size_ [last_idx_]   <<- size_ [idx]
+        mtime_[last_idx_]   <<- mtime_[idx]
+        atime_[last_idx_]   <<- time
+
+        # Clear out old entry
+        key_  [idx] <<- NA_character_
+        value_[idx] <<- list(NULL)
+        size_ [idx] <<- NA_real_
+        mtime_[idx] <<- NA_real_
+        atime_[idx] <<- NA_real_
+      }
+
+    } else {
+      atime_[idx] <<- time
+    }
+
+  }
+
+
+  remove_ <- function(keys) {
+    if (length(keys) == 1) {
+      remove_one_(keys)
+    } else {
+      vapply(keys, remove_one_, TRUE)
+    }
+
+    if (last_idx_ > COMPACT_LIMIT  &&  last_idx_ > total_n_ * COMPACT_MULT) {
+      compact_()
     }
   }
 
-  object_info_ = function() {
-    objs <- cache_$as_list()
-    len  <- length(objs)
+  remove_one_ <- function(key) {
+    idx <- key_idx_map_$get(key)
 
-    # Pre-allocate these vectors and fill them with a for loop. This is faster
-    # than calling vapply() multiple times to extract each one.
-    key   <- character(len)
-    size  <- numeric(len)
-    mtime <- numeric(len)
-    atime <- numeric(len)
-
-    for (i in seq_len(len)) {
-      obj <- objs[[i]]
-
-      key[i]   <- obj$key
-      size[i]  <- obj$size
-      mtime[i] <- obj$mtime
-      atime[i] <- obj$atime
+    if (is.null(idx)) {
+      return()
     }
 
-    data.frame(
-      key   = key,
-      size  = size,
-      mtime = mtime,
-      atime = atime,
-      stringsAsFactors = FALSE
+    # Overall n and size bookkeeping
+    total_n_ <<- total_n_ - 1L
+    if (PRUNE_BY_SIZE) {
+      total_size_ <<- total_size_ - size_[idx]
+    }
+
+    # Clear out entry
+    key_  [idx] <<- NA_character_
+    value_[idx] <<- list(NULL)
+    size_ [idx] <<- NA_real_
+    mtime_[idx] <<- NA_real_
+    atime_[idx] <<- NA_real_
+
+    key_idx_map_$remove(key)
+  }
+
+  compact_ <- function() {
+    from_idxs <- key_[seq_len(last_idx_)]
+    from_idxs <- !is.na(from_idxs)
+    from_idxs <- which(from_idxs)
+
+    if (DEBUG) stopifnot(total_n_ == length(from_idxs))
+
+    if (total_n_ == 0L) {
+      message("nothing to compact")
+      return()
+    }
+
+    new_size <- ceiling(total_n_ * COMPACT_MULT)
+
+    # Allocate new vectors for metadata.
+    new_key_   <- rep_len(NA_character_, new_size)
+    new_value_ <- vector("list",         new_size)
+    new_size_  <- rep_len(NA_real_,      new_size)
+    new_mtime_ <- rep_len(NA_real_,      new_size)
+    new_atime_ <- rep_len(NA_real_,      new_size)
+
+    # Copy (and compact, removing gaps) from old vectors to new ones.
+    to_idxs <- seq_len(total_n_)
+    new_key_  [to_idxs] <- key_  [from_idxs]
+    new_value_[to_idxs] <- value_[from_idxs]
+    new_size_ [to_idxs] <- size_ [from_idxs]
+    new_mtime_[to_idxs] <- mtime_[from_idxs]
+    new_atime_[to_idxs] <- atime_[from_idxs]
+
+    # Replace old vectors with new ones.
+    key_   <<- new_key_
+    value_ <<- new_value_
+    size_  <<- new_size_
+    mtime_ <<- new_mtime_
+    atime_ <<- new_atime_
+
+    # Update the index values in the key-index map.
+    args <- to_idxs
+    names(args) <- key_[to_idxs]
+    key_idx_map_$mset(.list = args)
+
+    last_idx_ <<- total_n_
+  }
+
+  # Returns data frame of info, with gaps removed.
+  # If evict=="lru", this will be sorted by atime.
+  # If evict=="fifo", this will be sorted by mtime.
+  get_metadata_ <- function() {
+    idxs <- !is.na(mtime_[seq_len(last_idx_)])
+    idxs <- which(idxs)
+
+    if (!MAINTAIN_TIME_SORT) {
+      if (evict_ == "lru") {
+        idxs <- idxs[order(atime_[idxs])]
+      } else {
+        idxs <- idxs[order(mtime_[idxs])]
+      }
+    }
+
+    idxs <- rev(idxs)
+
+    # Return a list -- this basically same structure as a data frame, but
+    # we're using a plain list to avoid data frame slowness
+    list(
+      key   = key_  [idxs],
+      size  = size_ [idxs],
+      mtime = mtime_[idxs],
+      atime = atime_[idxs]
     )
   }
 
