@@ -107,14 +107,19 @@ if (is.key_missing(value)) {
 The reason for doing this (instead of calling `$exists(key)` and then
 `$get(key)`) is that for some storage backends, there is a potential
 race condition: the object could be removed from the cache between the
-`exists()` and `get()` calls. For example, if multiple R processes have
-`cache_disk`s that share the same directory, one process could remove an
-object from the cache in between the `exists()` and `get()` calls in
-another process, resulting in an error.
+`exists()` and `get()` calls. For example:
+
+-   If multiple R processes have `cache_disk`s that share the same
+    directory, one process could remove an object from the cache in
+    between the `exists()` and `get()` calls in another process,
+    resulting in an error.
+-   If you use a `cache_mem` with a `max_age`, it’s possible for an
+    object to be present when you call `exists()`, but for its age to
+    exceed `max_age` by the time `get()` is called. In that case, the
+    `get()` will return a `key_missing()` object.
 
 ``` r
-# Avoid this pattern! It is only safe with cache_mem(), but if your code allows
-# using other types of cache objects, it can result in a race condition.
+# Avoid this pattern, due to a potential race condition!
 if (m$exists(key)) {
   value <- m$get(key)
 }
