@@ -145,10 +145,13 @@
 <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span>
   <span class="co"># Cache hit - do another thing</span>
 <span class="op">}</span></code></pre></div>
-<p>The reason for doing this (instead of calling <code>$exists(key)</code> and then <code>$get(key)</code>) is that for some storage backends, there is a potential race condition: the object could be removed from the cache between the <code><a href="https://rdrr.io/r/base/exists.html">exists()</a></code> and <code><a href="https://rdrr.io/r/base/get.html">get()</a></code> calls. For example, if multiple R processes have <code>cache_disk</code>s that share the same directory, one process could remove an object from the cache in between the <code><a href="https://rdrr.io/r/base/exists.html">exists()</a></code> and <code><a href="https://rdrr.io/r/base/get.html">get()</a></code> calls in another process, resulting in an error.</p>
+<p>The reason for doing this (instead of calling <code>$exists(key)</code> and then <code>$get(key)</code>) is that for some storage backends, there is a potential race condition: the object could be removed from the cache between the <code><a href="https://rdrr.io/r/base/exists.html">exists()</a></code> and <code><a href="https://rdrr.io/r/base/get.html">get()</a></code> calls. For example:</p>
+<ul>
+<li>If multiple R processes have <code>cache_disk</code>s that share the same directory, one process could remove an object from the cache in between the <code><a href="https://rdrr.io/r/base/exists.html">exists()</a></code> and <code><a href="https://rdrr.io/r/base/get.html">get()</a></code> calls in another process, resulting in an error.</li>
+<li>If you use a <code>cache_mem</code> with a <code>max_age</code>, it’s possible for an object to be present when you call <code><a href="https://rdrr.io/r/base/exists.html">exists()</a></code>, but for its age to exceed <code>max_age</code> by the time <code><a href="https://rdrr.io/r/base/get.html">get()</a></code> is called. In that case, the <code><a href="https://rdrr.io/r/base/get.html">get()</a></code> will return a <code><a href="https://r-lib.github.io/fastmap/reference/key_missing.html">key_missing()</a></code> object.</li>
+</ul>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co"># Avoid this pattern! It is only safe with cache_mem(), but if your code allows</span>
-<span class="co"># using other types of cache objects, it can result in a race condition.</span>
+<code class="sourceCode R"><span class="co"># Avoid this pattern, due to a potential race condition!</span>
 <span class="kw">if</span> <span class="op">(</span><span class="va">m</span><span class="op">$</span><span class="fu">exists</span><span class="op">(</span><span class="va">key</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span>
   <span class="va">value</span> <span class="op">&lt;-</span> <span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="va">key</span><span class="op">)</span>
 <span class="op">}</span></code></pre></div>
