@@ -68,6 +68,14 @@ test_that("cache_mem: pruning respects max_size", {
   expect_identical(sort(d$keys()), c("e", "f"))
 })
 
+test_that("cache_mem: max_size=Inf", {
+  mc <- cachem::cache_mem(max_size = Inf)
+  mc$set("a", 123)
+  expect_identical(mc$get("a"), 123)
+  mc$prune()
+  expect_identical(mc$get("a"), 123)
+})
+
 test_that("cache_mem: pruning respects both max_n and max_size", {
   d <- cache_mem(max_n = 3, max_size = object.size(123) * 3)
   # Set some values. Use rnorm so that object size is large; a simple vector

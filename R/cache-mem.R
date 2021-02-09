@@ -250,6 +250,8 @@ cache_mem <- function(
       # Reported size is rough! See ?object.size.
       size <- as.numeric(object.size(value))
       total_size_ <<- total_size_ + size
+    } else {
+      size <- NA_real_
     }
 
     old_idx <- key_idx_map_$get(key)
