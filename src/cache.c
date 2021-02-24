@@ -12,7 +12,7 @@ SEXP C_validate_key(SEXP key_r) {
   }
 
   const char* s = R_CHAR(key_c);
-  char cset[] = "1234567890abcdefghijklmnopqrstuvwxyz";
+  char cset[] = "1234567890abcdefghijklmnopqrstuvwxyz_-";
   int i = strspn(s, cset);
   if (i != strlen(s)) {
     Rf_error("Invalid key: %s. Only lowercase letters and numbers are allowed.", s);
