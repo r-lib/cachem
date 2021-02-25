@@ -336,10 +336,11 @@ Some optional methods:
 
 For these methods:
 
--   `key`: can be any string with numbers and lower-case letters. Some
-    storage backends may not be handle very long keys well. For example,
-    with a `cache_disk()`, the key is used as a filename, and on some
-    filesystems, very filenames may hit limits on path lengths.
+-   `key`: can be any string with lowercase letters, numbers, underscore
+    (`_`) and hyphen (`-`). Some storage backends may not be handle very
+    long keys well. For example, with a `cache_disk()`, the key is used
+    as a filename, and on some filesystems, very filenames may hit
+    limits on path lengths.
 -   `value`: can be any R object, with some exceptions noted below.
 
 #### Limitations of serialized objects
