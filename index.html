@@ -290,7 +290,7 @@
 <p>For these methods:</p>
 <ul>
 <li>
-<code>key</code>: can be any string with numbers and lower-case letters. Some storage backends may not be handle very long keys well. For example, with a <code><a href="reference/cache_disk.html">cache_disk()</a></code>, the key is used as a filename, and on some filesystems, very filenames may hit limits on path lengths.</li>
+<code>key</code>: can be any string with lowercase letters, numbers, underscore (<code>_</code>) and hyphen (<code><a href="https://rdrr.io/r/base/Arithmetic.html">-</a></code>). Some storage backends may not be handle very long keys well. For example, with a <code><a href="reference/cache_disk.html">cache_disk()</a></code>, the key is used as a filename, and on some filesystems, very filenames may hit limits on path lengths.</li>
 <li>
 <code>value</code>: can be any R object, with some exceptions noted below.</li>
 </ul>
