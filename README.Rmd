@@ -62,7 +62,7 @@ m$set("abc123", c("Hello", "world"))
 m$set("xyz", function() message("Goodbye"))
 ```
 
-The `key` must be a string consisting of lowercase letters and numbers. (Upper-case characters are not allowed because some storage backends do not distinguish between lowercase and uppercase letters.) The `value` can be any R object.
+The `key` must be a string consisting of lowercase letters, numbers, and the underscore (`_`) and hyphen (`-`) characters. (Upper-case characters are not allowed because some storage backends do not distinguish between lowercase and uppercase letters.) The `value` can be any R object.
 
 Get the values with `$get()`:
 ```{r}
