@@ -31,6 +31,6 @@ absolute_path <- function(path) {
 }
 
 validate_key <- function(key) {
-  # This C function does the same as `grepl("[^a-z0-9]")`, but faster.
+  # This C function does the same as `grepl("[^a-z0-9_-]")`, but faster.
   .Call(C_validate_key, key)
 }

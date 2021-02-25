@@ -1,3 +1,8 @@
+cachem 1.0.4.9000
+============
+
+* `cache_mem()` and `cache_disk()` now allow `-` and `_` (hyphen and underscore) characters in the keys.
+
 cachem 1.0.4
 ============
 
