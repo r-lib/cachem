@@ -513,7 +513,7 @@ cache_disk <- function(
     prune_throttle_counter_ <<- prune_throttle_counter_ + 1
 
     if (prune_throttle_counter_ > prune_rate_ ||
-        prune_last_time_ - as.numeric(Sys.time()) > 5)
+        as.numeric(Sys.time()) - prune_last_time_ > 5)
     {
       prune()
       prune_throttle_counter_ <<- 0
