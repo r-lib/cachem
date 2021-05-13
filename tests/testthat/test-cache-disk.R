@@ -159,6 +159,38 @@ test_that('cache_disk: pruning with evict="fifo"', {
 })
 
 
+test_that("cache_disk: pruning throttling", {
+  skip_on_cran()
+
+  # Pruning won't happen when the number of items is less than prune_rate AND
+  # the set() calls happen within 5 seconds.
+  d <- cache_disk(max_n = 2, prune_rate = 20)
+  d$set("a", 1)
+  d$set("b", 1)
+  d$set("c", 1)
+  d$set("d", 1)
+  expect_identical(sort(d$keys()), c("a", "b", "c", "d"))
+
+  # Pruning will happen with a lower prune_rate value.
+  d <- cache_disk(max_n = 2, prune_rate = 3)
+  # Normally the throttle counter starts with a random value, but for these
+  # tests we need to make it deterministic.
+  environment(d$set)$prune_throttle_counter_ <- 0
+  d$set("a", 1)
+  d$set("b", 1)
+  d$set("c", 1)
+  expect_identical(sort(d$keys()), c("a", "b", "c"))
+  d$set("d", 1)
+  expect_identical(sort(d$keys()), c("c", "d"))
+  d$set("e", 1)
+  expect_identical(sort(d$keys()), c("c", "d", "e"))
+
+  # After a 5 second delay, on the next set(), pruning will not be throttled.
+  Sys.sleep(5)
+  d$set("f", 1)
+  expect_identical(sort(d$keys()), c("e", "f"))
+})
+
 test_that("destroy_on_finalize works", {
   d <- cache_disk(destroy_on_finalize = TRUE)
   cache_dir <- d$info()$dir
