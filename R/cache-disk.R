@@ -426,7 +426,7 @@ cache_disk <- function(
       info <- info[!rm_idx, ]
     }
 
-    prune_last_time_ <- as.numeric(current_time)
+    prune_last_time_ <<- as.numeric(current_time)
 
     invisible(TRUE)
   }
@@ -468,7 +468,7 @@ cache_disk <- function(
     file.remove(dir(dir_, "\\.rds$", full.names = TRUE))
     # Next remove dir recursively, including sentinel file.
     unlink(dir_, recursive = TRUE)
-    destroyed_ <- TRUE
+    destroyed_ <<- TRUE
     invisible(TRUE)
   }
 
@@ -477,7 +477,7 @@ cache_disk <- function(
         file.exists(file.path(dir_, "__destroyed__")))
     {
       # It's possible for another process to destroy a shared cache directory
-      destroyed_ <- TRUE
+      destroyed_ <<- TRUE
     }
 
     if (throw) {
@@ -510,13 +510,13 @@ cache_disk <- function(
   # future, the behavior may be customizable.
   prune_throttled_ <- function() {
     # Count the number of times prune() has been called.
-    prune_throttle_counter_ <- prune_throttle_counter_ + 1
+    prune_throttle_counter_ <<- prune_throttle_counter_ + 1
 
     if (prune_throttle_counter_ > prune_rate_ ||
         prune_last_time_ - as.numeric(Sys.time()) > 5)
     {
       prune()
-      prune_throttle_counter_ <- 0
+      prune_throttle_counter_ <<- 0
     }
   }
 
