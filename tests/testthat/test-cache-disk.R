@@ -165,10 +165,10 @@ test_that("cache_disk: pruning throttling", {
   # Pruning won't happen when the number of items is less than prune_rate AND
   # the set() calls happen within 5 seconds.
   d <- cache_disk(max_n = 2, prune_rate = 20)
-  d$set("a", 1)
-  d$set("b", 1)
-  d$set("c", 1)
-  d$set("d", 1)
+  d$set("a", 1); Sys.sleep(0.01)
+  d$set("b", 1); Sys.sleep(0.01)
+  d$set("c", 1); Sys.sleep(0.01)
+  d$set("d", 1); Sys.sleep(0.01)
   expect_identical(sort(d$keys()), c("a", "b", "c", "d"))
 
   # Pruning will happen with a lower prune_rate value.
@@ -176,18 +176,18 @@ test_that("cache_disk: pruning throttling", {
   # Normally the throttle counter starts with a random value, but for these
   # tests we need to make it deterministic.
   environment(d$set)$prune_throttle_counter_ <- 0
-  d$set("a", 1)
-  d$set("b", 1)
-  d$set("c", 1)
+  d$set("a", 1); Sys.sleep(0.01)
+  d$set("b", 1); Sys.sleep(0.01)
+  d$set("c", 1); Sys.sleep(0.01)
   expect_identical(sort(d$keys()), c("a", "b", "c"))
-  d$set("d", 1)
+  d$set("d", 1); Sys.sleep(0.01)
   expect_identical(sort(d$keys()), c("c", "d"))
-  d$set("e", 1)
+  d$set("e", 1); Sys.sleep(0.01)
   expect_identical(sort(d$keys()), c("c", "d", "e"))
 
   # After a 5 second delay, on the next set(), pruning will not be throttled.
   Sys.sleep(5)
-  d$set("f", 1)
+  d$set("f", 1); Sys.sleep(0.01)
   expect_identical(sort(d$keys()), c("e", "f"))
 })
 
