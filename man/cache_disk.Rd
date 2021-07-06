@@ -201,6 +201,10 @@ Stores the \code{key}-\code{value} pair in the cache.
 Returns \code{TRUE} if the cache contains the key, otherwise
 \code{FALSE}.
 }
+\item{\code{remove(key)}}{
+Removes \code{key} from the cache, if it exists in the cache. If the key is
+not in the cache, this does nothing.
+}
 \item{\code{size()}}{
 Returns the number of items currently in the cache.
 }

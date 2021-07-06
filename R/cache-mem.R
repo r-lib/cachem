@@ -98,6 +98,10 @@
 #'       Returns `TRUE` if the cache contains the key, otherwise
 #'       `FALSE`.
 #'     }
+#'     \item{`remove(key)`}{
+#'       Removes `key` from the cache, if it exists in the cache. If the key is
+#'       not in the cache, this does nothing.
+#'     }
 #'     \item{`size()`}{
 #'       Returns the number of items currently in the cache.
 #'     }

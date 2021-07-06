@@ -3,6 +3,8 @@ cachem 1.0.5.9000
 
 * Fixed #14: Fix off-by-one error when checking pruning throttling counter for `cache_disk`. (#15)
 
+* Closed #13: Added documentation for the `remove()` method.
+
 cachem 1.0.5
 ============
 
