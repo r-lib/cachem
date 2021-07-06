@@ -115,7 +115,7 @@ the parameters max_size, max_age, max_n, and evict." />
   <div class="col-md-9 contents">
     <div class="page-header">
     <h1>Create a memory cache object</h1>
-    <small class="dont-index">Source: <a href='https://github.com/r-lib/cachem/blob/master/R/cache-memory.R'><code>R/cache-memory.R</code></a></small>
+    <small class="dont-index">Source: <a href='https://github.com/r-lib/cachem/blob/master/R/cache-mem.R'><code>R/cache-mem.R</code></a></small>
     <div class="hidden name"><code>cache_mem.Rd</code></div>
     </div>
 
@@ -258,6 +258,8 @@ created. See section Missing Keys for more information.</p></dd>
 <dt><code>set(key, value)</code></dt><dd><p>Stores the <code>key</code>-<code>value</code> pair in the cache.</p></dd>
 <dt><code><a href='https://rdrr.io/r/base/exists.html'>exists(key)</a></code></dt><dd><p>Returns <code>TRUE</code> if the cache contains the key, otherwise
 <code>FALSE</code>.</p></dd>
+<dt><code><a href='https://rdrr.io/r/base/rm.html'>remove(key)</a></code></dt><dd><p>Removes <code>key</code> from the cache, if it exists in the cache. If the key is
+not in the cache, this does nothing.</p></dd>
 <dt><code>size()</code></dt><dd><p>Returns the number of items currently in the cache.</p></dd>
 <dt><code>keys()</code></dt><dd><p>Returns a character vector of all keys currently in the cache.</p></dd>
 <dt><code>reset()</code></dt><dd><p>Clears all objects from the cache.</p></dd>
