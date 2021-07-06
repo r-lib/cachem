@@ -179,11 +179,13 @@ test_that("cache_disk: pruning throttling", {
   d$set("a", 1); Sys.sleep(0.01)
   d$set("b", 1); Sys.sleep(0.01)
   d$set("c", 1); Sys.sleep(0.01)
-  expect_identical(sort(d$keys()), c("a", "b", "c"))
+  expect_identical(sort(d$keys()), c("b", "c"))
   d$set("d", 1); Sys.sleep(0.01)
-  expect_identical(sort(d$keys()), c("c", "d"))
+  expect_identical(sort(d$keys()), c("b", "c", "d"))
   d$set("e", 1); Sys.sleep(0.01)
-  expect_identical(sort(d$keys()), c("c", "d", "e"))
+  expect_identical(sort(d$keys()), c("b", "c", "d", "e"))
+  d$set("f", 1); Sys.sleep(0.01)
+  expect_identical(sort(d$keys()), c("e", "f"))
 
   # After a 5 second delay, on the next set(), pruning will not be throttled.
   Sys.sleep(5)
