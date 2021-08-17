@@ -1,20 +1,16 @@
 on:
   push:
-    branches:
-      - main
-      - master
-      - rc-v**
-  pull_request:
-    branches: master
+    paths:
+      - '.github/workflows/render-readme.yaml'
+      - 'README.Rmd'
 
-
-name: pkgdown
+name: Render README.Rmd
 
 jobs:
-  pkgdown:
+  render:
     runs-on: ubuntu-20.04
     env:
-      RSPM: https://packagemanager.rstudio.com/cran/__linux__/bionic/latest
+      RSPM: https://packagemanager.rstudio.com/cran/__linux__/focal/latest
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
@@ -37,8 +33,10 @@ jobs:
           path: |
             ${{ env.R_LIBS_USER }}/*
             !${{ env.R_LIBS_USER }}/pak
-          key: ubuntu-20.04-${{ steps.install-r.outputs.installed-r-version }}-1-${{ hashFiles('.github/r-depends.rds') }}
-          restore-keys: ubuntu-20.04-${{ steps.install-r.outputs.installed-r-version }}-1-
+          key: ubuntu-20.04-${{ steps.install-r.outputs.installed-r-version }}-readme-1-${{ hashFiles('.github/r-depends.rds') }}
+          restore-keys: |
+            ubuntu-20.04-${{ steps.install-r.outputs.installed-r-version }}-readme-1-
+            ubuntu-20.04-${{ steps.install-r.outputs.installed-r-version }}-1-
 
       - name: Install system dependencies
         if: runner.os == 'Linux'
@@ -50,28 +48,20 @@ jobs:
       - name: Install dependencies
         run: |
           pak::local_install_dev_deps(upgrade = TRUE, dependencies = c("all", "Config/Needs/website"))
-          pak::pkg_install("pkgdown")
+          pak::pkg_install(c("pkgdown", "rmarkdown"))
         shell: Rscript {0}
 
       - name: Install package
         run: R CMD INSTALL .
 
-      - name: Build Site (PR)
-        if: github.event_name != 'push'
+      - name: Render README
         shell: Rscript {0}
         run: |
-          pkgdown::build_site(new_process = FALSE)
-      # Must validate after. Otherwise files are saved and `pkgdown::build_site()` gets mad
-      - name: Validate all topics exist (PR)
-        if: github.event_name != 'push'
-        shell: Rscript {0}
-        run: |
-          pkgdown::build_reference_index()
-          stopifnot(length(warnings()) == 0)
+          rmarkdown::render("README.Rmd")
 
-      - name: Build and deploy pkgdown site (push)
-        if: github.event_name == 'push'
+      - name: Commit results
         run: |
-          git config --local user.name "$GITHUB_ACTOR"
-          git config --local user.email "$GITHUB_ACTOR@users.noreply.github.com"
-          Rscript -e 'pkgdown::deploy_to_branch(new_process = FALSE)'
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          git commit README.md -m 'Re-build README.Rmd' || echo "No changes to commit"
+          git push origin || echo "No changes to commit"
