@@ -47,12 +47,13 @@ jobs:
         run: |
           pak::local_system_requirements(execute = TRUE)
           pak::pkg_system_requirements("pkgdown", execute = TRUE)
+          pak::pkg_system_requirements("lobstr", execute = TRUE)
         shell: Rscript {0}
 
       - name: Install dependencies
         run: |
           pak::local_install_dev_deps(upgrade = TRUE, dependencies = c("all", "Config/Needs/website"))
-          pak::pkg_install("pkgdown")
+          pak::pkg_install(c("pkgdown", "lobstr"))
         shell: Rscript {0}
 
       - name: Install package
