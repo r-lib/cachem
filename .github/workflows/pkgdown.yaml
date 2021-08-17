@@ -5,7 +5,9 @@ on:
       - master
       - rc-v**
   pull_request:
-    branches: master
+    branches:
+    - main
+    - master
 
 
 name: pkgdown
