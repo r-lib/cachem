@@ -12,7 +12,7 @@ Winston
 
 ## Test environments
 
-* GitHub Actions
+* GitHub Actions - https://github.com/r-lib/cachem/pull/16/checks
   * macOS
     * devel, release
   * windows
