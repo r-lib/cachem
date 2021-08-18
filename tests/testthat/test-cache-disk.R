@@ -50,7 +50,7 @@ test_that("cache_disk: pruning respects max_n", {
   # that a heavily loaded system will have issues with these tests because of
   # the time resolution.
   skip_on_cran()
-  delay <- 0.01 * time_factor
+  delay <- 0.02 * time_factor
   d <- cache_disk(max_n = 3)
   # NOTE: The short delays after each item are meant to tests more reliable on
   # CI systems.
@@ -65,7 +65,7 @@ test_that("cache_disk: pruning respects max_n", {
 
 test_that("cache_disk: pruning respects max_size", {
   skip_on_cran()
-  delay <- 0.01 * time_factor
+  delay <- 0.02 * time_factor
   d <- cache_disk(max_size = 200)
   d$set("a", rnorm(100)); Sys.sleep(delay)
   d$set("b", rnorm(100)); Sys.sleep(delay)
@@ -119,7 +119,7 @@ setfiletime_has_subsecond_resolution <- function() {
 
 test_that('cache_disk: pruning with evict="lru"', {
   skip_on_cran()
-  delay <- 0.01 * time_factor
+  delay <- 0.02 * time_factor
   # For lru tests, make sure there's sub-second resolution for
   # Sys.setFileTime(), because that's what the lru code uses to update times.
   skip_if_not(
@@ -147,7 +147,7 @@ test_that('cache_disk: pruning with evict="lru"', {
 
 test_that('cache_disk: pruning with evict="fifo"', {
   skip_on_cran()
-  delay <- 0.01 * time_factor
+  delay <- 0.02 * time_factor
   d <- cache_disk(max_n = 2, evict = "fifo")
   d$set("a", 1); Sys.sleep(delay)
   d$set("b", 1); Sys.sleep(delay)
@@ -169,7 +169,7 @@ test_that('cache_disk: pruning with evict="fifo"', {
 
 test_that("cache_disk: pruning throttling", {
   skip_on_cran()
-  delay <- 0.01 * time_factor
+  delay <- 0.02 * time_factor
 
   # Pruning won't happen when the number of items is less than prune_rate AND
   # the set() calls happen within 5 seconds.
