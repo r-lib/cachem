@@ -12,7 +12,6 @@ Winston
 
 ## Test environments
 
-* local macOS, R 4.0.2
 * GitHub Actions
   * macOS
     * devel, release
