@@ -2,9 +2,7 @@
 
 #### 2021-8-17
 
-Couple of bug fixes.
-
-Please let me know if there is anything else I can provide.
+Bug fixes.
 
 Thank you,
 Winston
