@@ -171,9 +171,12 @@ test_that("cache_disk: pruning throttling", {
   skip_on_cran()
   delay <- 0.01 * time_factor
 
+  tempFile <- tempfile()
+  on.exit({unlink(tempFile)}, add = TRUE)
+
   # Pruning won't happen when the number of items is less than prune_rate AND
   # the set() calls happen within 5 seconds.
-  d <- cache_disk(max_n = 2, prune_rate = 20)
+  d <- cache_disk(max_n = 2, prune_rate = 20, logfile = tempFile)
   # Modify the time limit because 5 seconds might be too quick on slow CI
   # systems.
   environment(d$set)$PRUNE_THROTTLE_TIME_LIMIT <- 1e6
@@ -181,7 +184,9 @@ test_that("cache_disk: pruning throttling", {
   d$set("b", 1); Sys.sleep(delay)
   d$set("c", 1); Sys.sleep(delay)
   d$set("d", 1); Sys.sleep(delay)
-  expect_identical(sort(d$keys()), c("a", "b", "c", "d"))
+  keys <- d$keys()
+  cat("\n\nKeys!\n", paste0(readLines(tempFile), collapse = "\n"), "\n\n", sep = "")
+  expect_identical(sort(keys), c("a", "b", "c", "d"))
 
   # Pruning will happen with a lower prune_rate value.
   d <- cache_disk(max_n = 2, prune_rate = 3)
