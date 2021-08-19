@@ -1,6 +1,13 @@
-time_factor <- 1
-# Do things slower on GHA because of slow machines
-if (is_on_github_actions()) time_factor <- 4
+
+cache_disk_deterministic <- function(...) {
+  d <- cache_disk(...)
+
+  # Normally the throttle counter starts with a random value, but for these
+  # tests we need to make it deterministic.
+  environment(d$set)$prune_throttle_counter_ <- 0
+
+  d
+}
 
 
 test_that("cache_disk: handling missing values", {
@@ -50,8 +57,9 @@ test_that("cache_disk: pruning respects max_n", {
   # that a heavily loaded system will have issues with these tests because of
   # the time resolution.
   skip_on_cran()
-  delay <- 0.02 * time_factor
-  d <- cache_disk(max_n = 3)
+  delay <- 0.01
+
+  d <- cache_disk_deterministic(max_n = 3)
   # NOTE: The short delays after each item are meant to tests more reliable on
   # CI systems.
   d$set("a", rnorm(100)); Sys.sleep(delay)
@@ -65,8 +73,9 @@ test_that("cache_disk: pruning respects max_n", {
 
 test_that("cache_disk: pruning respects max_size", {
   skip_on_cran()
-  delay <- 0.02 * time_factor
-  d <- cache_disk(max_size = 200)
+  delay <- 0.01
+
+  d <- cache_disk_deterministic(max_size = 200)
   d$set("a", rnorm(100)); Sys.sleep(delay)
   d$set("b", rnorm(100)); Sys.sleep(delay)
   d$set("c", 1);          Sys.sleep(delay)
@@ -87,7 +96,8 @@ test_that("cache_disk: pruning respects max_size", {
 # Issue shiny#3033
 test_that("cache_disk: pruning respects both max_n and max_size", {
   skip_on_cran()
-  d <- cache_disk(max_n = 3, max_size = 200)
+  d <- cache_disk_deterministic(max_n = 3, max_size = 200)
+
   # Set some values. Use rnorm so that object size is large; a simple vector
   # like 1:100 will be stored very efficiently by R's ALTREP, and won't exceed
   # the max_size. We want each of these objects to exceed max_size so that
@@ -97,7 +107,7 @@ test_that("cache_disk: pruning respects both max_n and max_size", {
   d$set("c", rnorm(100))
   d$set("d", rnorm(100))
   d$set("e", rnorm(100))
-  Sys.sleep(0.1*time_factor)  # For systems that have low mtime resolution.
+  Sys.sleep(0.1)  # For systems that have low mtime resolution.
   d$set("f", 1)   # This object is small and shouldn't be pruned.
   d$prune()
   expect_identical(d$keys(), "f")
@@ -119,7 +129,7 @@ setfiletime_has_subsecond_resolution <- function() {
 
 test_that('cache_disk: pruning with evict="lru"', {
   skip_on_cran()
-  delay <- 0.02 * time_factor
+  delay <- 0.01
   # For lru tests, make sure there's sub-second resolution for
   # Sys.setFileTime(), because that's what the lru code uses to update times.
   skip_if_not(
@@ -127,7 +137,7 @@ test_that('cache_disk: pruning with evict="lru"', {
     "Sys.setFileTime() does not have subsecond resolution on this platform."
   )
 
-  d <- cache_disk(max_n = 2)
+  d <- cache_disk_deterministic(max_n = 2)
   d$set("a", 1); Sys.sleep(delay)
   d$set("b", 1); Sys.sleep(delay)
   d$set("c", 1); Sys.sleep(delay)
@@ -147,8 +157,9 @@ test_that('cache_disk: pruning with evict="lru"', {
 
 test_that('cache_disk: pruning with evict="fifo"', {
   skip_on_cran()
-  delay <- 0.02 * time_factor
-  d <- cache_disk(max_n = 2, evict = "fifo")
+  delay <- 0.01
+
+  d <- cache_disk_deterministic(max_n = 2, evict = "fifo")
   d$set("a", 1); Sys.sleep(delay)
   d$set("b", 1); Sys.sleep(delay)
   d$set("c", 1); Sys.sleep(delay)
@@ -169,14 +180,11 @@ test_that('cache_disk: pruning with evict="fifo"', {
 
 test_that("cache_disk: pruning throttling", {
   skip_on_cran()
-  delay <- 0.01 * time_factor
+  delay <- 0.01
 
   # Pruning won't happen when the number of items is less than prune_rate AND
   # the set() calls happen within 5 seconds.
-  d <- cache_disk(max_n = 2, prune_rate = 20)
-  # Modify the time limit because 5 seconds might be too quick on slow CI
-  # systems.
-  environment(d$set)$PRUNE_THROTTLE_TIME_LIMIT <- 1e6
+  d <- cache_disk_deterministic(max_n = 2, prune_rate = 20)
   d$set("a", 1); Sys.sleep(delay)
   d$set("b", 1); Sys.sleep(delay)
   d$set("c", 1); Sys.sleep(delay)
@@ -184,11 +192,7 @@ test_that("cache_disk: pruning throttling", {
   expect_identical(sort(d$keys()), c("a", "b", "c", "d"))
 
   # Pruning will happen with a lower prune_rate value.
-  d <- cache_disk(max_n = 2, prune_rate = 3)
-  environment(d$set)$PRUNE_THROTTLE_TIME_LIMIT <- 1e6
-  # Normally the throttle counter starts with a random value, but for these
-  # tests we need to make it deterministic.
-  environment(d$set)$prune_throttle_counter_ <- 0
+  d <- cache_disk_deterministic(max_n = 2, prune_rate = 3)
   d$set("a", 1); Sys.sleep(delay)
   d$set("b", 1); Sys.sleep(delay)
   d$set("c", 1); Sys.sleep(delay)
@@ -200,9 +204,6 @@ test_that("cache_disk: pruning throttling", {
   d$set("f", 1); Sys.sleep(delay)
   expect_identical(sort(d$keys()), c("e", "f"))
 
-  # Set the time limit back to 5 seconds, and after a 5 second delay, on the
-  # next set(), pruning will not be throttled.
-  environment(d$set)$PRUNE_THROTTLE_TIME_LIMIT <- 5
   Sys.sleep(5)
   d$set("f", 1); Sys.sleep(delay)
   expect_identical(sort(d$keys()), c("e", "f"))
