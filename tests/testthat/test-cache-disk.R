@@ -169,11 +169,14 @@ test_that('cache_disk: pruning with evict="fifo"', {
 
 test_that("cache_disk: pruning throttling", {
   skip_on_cran()
-  delay <- 0.02 * time_factor
+  delay <- 0.01 * time_factor
 
   # Pruning won't happen when the number of items is less than prune_rate AND
   # the set() calls happen within 5 seconds.
   d <- cache_disk(max_n = 2, prune_rate = 20)
+  # Modify the time limit because 5 seconds might be too quick on slow CI
+  # systems.
+  environment(d$set)$PRUNE_THROTTLE_TIME_LIMIT <- 1e6
   d$set("a", 1); Sys.sleep(delay)
   d$set("b", 1); Sys.sleep(delay)
   d$set("c", 1); Sys.sleep(delay)
@@ -182,6 +185,7 @@ test_that("cache_disk: pruning throttling", {
 
   # Pruning will happen with a lower prune_rate value.
   d <- cache_disk(max_n = 2, prune_rate = 3)
+  environment(d$set)$PRUNE_THROTTLE_TIME_LIMIT <- 1e6
   # Normally the throttle counter starts with a random value, but for these
   # tests we need to make it deterministic.
   environment(d$set)$prune_throttle_counter_ <- 0
@@ -196,7 +200,9 @@ test_that("cache_disk: pruning throttling", {
   d$set("f", 1); Sys.sleep(delay)
   expect_identical(sort(d$keys()), c("e", "f"))
 
-  # After a 5 second delay, on the next set(), pruning will not be throttled.
+  # Set the time limit back to 5 seconds, and after a 5 second delay, on the
+  # next set(), pruning will not be throttled.
+  environment(d$set)$PRUNE_THROTTLE_TIME_LIMIT <- 5
   Sys.sleep(5)
   d$set("f", 1); Sys.sleep(delay)
   expect_identical(sort(d$keys()), c("e", "f"))
