@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">cachem</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.0.6</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.0.6.9000</span>
       </span>
     </div>
 
@@ -85,7 +85,13 @@
 <li><a href="#cache_disk"><code>cache_disk()</code></a></li>
 </ul>
 </li>
-<li><a href="#cache-api">Cache API</a></li>
+<li>
+<a href="#cache-api">Cache API</a>
+<ul>
+<li><a href="#limitations-of-serialized-objects">Limitations of serialized objects</a></li>
+<li><a href="#read-only-caches">Read-only caches</a></li>
+</ul>
+</li>
 <li><a href="#pruning">Pruning</a></li>
 <li><a href="#layered-caches">Layered caches</a></li>
 </ul>
@@ -129,7 +135,6 @@
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"abc123"</span><span class="op">)</span>
 <span class="co">#&gt; [1] "Hello" "world"</span>
-
 <span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"xyz"</span><span class="op">)</span>
 <span class="co">#&gt; function() message("Goodbye")</span></code></pre></div>
 <p>If you call <code><a href="https://rdrr.io/r/base/get.html">get()</a></code> on a key that doesn’t exists, it will return a <code><a href="https://r-lib.github.io/fastmap/reference/key_missing.html">key_missing()</a></code> sentinel value:</p>
@@ -150,7 +155,7 @@
 <li>If multiple R processes have <code>cache_disk</code>s that share the same directory, one process could remove an object from the cache in between the <code><a href="https://rdrr.io/r/base/exists.html">exists()</a></code> and <code><a href="https://rdrr.io/r/base/get.html">get()</a></code> calls in another process, resulting in an error.</li>
 <li>If you use a <code>cache_mem</code> with a <code>max_age</code>, it’s possible for an object to be present when you call <code><a href="https://rdrr.io/r/base/exists.html">exists()</a></code>, but for its age to exceed <code>max_age</code> by the time <code><a href="https://rdrr.io/r/base/get.html">get()</a></code> is called. In that case, the <code><a href="https://rdrr.io/r/base/get.html">get()</a></code> will return a <code><a href="https://r-lib.github.io/fastmap/reference/key_missing.html">key_missing()</a></code> object.</li>
 </ul>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<!-- end list --><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co"># Avoid this pattern, due to a potential race condition!</span>
 <span class="kw">if</span> <span class="op">(</span><span class="va">m</span><span class="op">$</span><span class="fu">exists</span><span class="op">(</span><span class="va">key</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span>
   <span class="va">value</span> <span class="op">&lt;-</span> <span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="va">key</span><span class="op">)</span>
@@ -177,7 +182,7 @@
 <p>An advantage that the memory cache has over the disk cache (and any other type of cache that stores the objects outside of the R process’s memory), is that it does not need to serialize objects. Instead, it merely stores references to the objects. This means that it can store objects that other caches cannot, and with more efficient use of memory – if two objects in the cache share some of their contents (such that they refer to the same sub-object in memory), then <code>cache_mem</code> will not create duplicate copies of the contents, as <code>cache_disk</code> would, since it serializes the objects with the <code><a href="https://rdrr.io/r/base/serialize.html">serialize()</a></code> function.</p>
 <p>Compared to the memory usage, the size <em>calculation</em> is not as intelligent: if there are two objects that share contents, their sizes are computed separately, even if they have items that share the exact same represention in memory. This is done with the <code><a href="https://rdrr.io/r/utils/object.size.html">object.size()</a></code> function, which does not account for multiple references to the same object in memory.</p>
 <p>In short, a memory cache, if anything, over-counts the amount of memory actually consumed. In practice, this means that if you set a 200MB limit to the size of cache, and the cache <em>thinks</em> it has 200MB of contents, the actual amount of memory consumed could be less than 200MB.</p>
-<details><p><summary> Demonstration of memory over-counting from <code><a href="https://rdrr.io/r/utils/object.size.html">object.size()</a></code> </summary></p>
+<details><p><summary>Demonstration of memory over-counting from <code><a href="https://rdrr.io/r/utils/object.size.html">object.size()</a></code></summary></p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co"># Create a and b which both contain the same numeric vector.</span>
 <span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">1e5</span><span class="op">)</span><span class="op">)</span>
