@@ -1,5 +1,5 @@
 Package: cachem
-Version: 1.0.6
+Version: 1.0.6.9000
 Title: Cache R Objects with Automatic Pruning
 Description: Key-value stores with automatic pruning. Caches can limit
     either their total size or the age of the oldest object (or both),
@@ -18,3 +18,8 @@ Suggests:
     testthat
 RoxygenNote: 7.1.1
 Roxygen: list(markdown = TRUE)
+Config/Needs/readme:
+    lobstr,
+    rmarkdown
+Config/Needs/website:
+    pkgdown
