@@ -25,7 +25,6 @@ jobs:
       - uses: r-lib/actions/setup-r-dependencies@v1
         with:
           cache-version: readme-1
-          extra-packages: rcmdcheck
           needs: readme
 
       - name: Install package

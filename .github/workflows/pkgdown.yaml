@@ -31,7 +31,7 @@ jobs:
       - uses: r-lib/actions/setup-r-dependencies@v1
         with:
           cache-version: pkgdown-1
-          extra-packages: rcmdcheck
+          extra-packages: testthat
           needs: |
             website
             readme
