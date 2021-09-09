@@ -8,3 +8,5 @@
 ^docs$
 ^pkgdown$
 ^Makefile$
+^cran-comments\.md$
+^revdep$

@@ -204,6 +204,11 @@ cache_disk <- function(
   logfile = NULL
 ) {
   # ============================================================================
+  # Constants
+  # ============================================================================
+  PRUNE_THROTTLE_TIME_LIMIT <- 5
+
+  # ============================================================================
   # Logging
   # ============================================================================
   # This needs to be defined first, because it's used in initialization.
@@ -517,7 +522,7 @@ cache_disk <- function(
     prune_throttle_counter_ <<- prune_throttle_counter_ + 1
 
     if (prune_throttle_counter_ >= prune_rate_ ||
-        as.numeric(Sys.time()) - prune_last_time_ > 5)
+        as.numeric(Sys.time()) - prune_last_time_ > PRUNE_THROTTLE_TIME_LIMIT)
     {
       prune()
       prune_throttle_counter_ <<- 0
