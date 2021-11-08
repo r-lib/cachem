@@ -84,7 +84,6 @@ m$get("abc123")
 
 m$get("xyz")
 #> function() message("Goodbye")
-#> <environment: 0x5642851d2ed8>
 ```
 
 If you call `get()` on a key that doesn’t exists, it will return a
