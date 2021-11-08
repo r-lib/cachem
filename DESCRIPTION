@@ -18,8 +18,7 @@ Suggests:
     testthat
 RoxygenNote: 7.1.1
 Roxygen: list(markdown = TRUE)
-Config/Needs/readme:
-    lobstr,
-    rmarkdown
+Config/Needs/routine:
+    lobstr
 Config/Needs/website:
     pkgdown
