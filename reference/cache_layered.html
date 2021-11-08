@@ -142,12 +142,12 @@ information will be written. To log to the console, use <code><a href='https://r
     <p>A layered caching object, with class <code>cache_layered</code>.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'>
-<span class='co'># Make a layered cache from a small memory cache and large disk cache</span>
-<span class='va'>m</span> <span class='op'>&lt;-</span> <span class='fu'><a href='cache_mem.html'>cache_mem</a></span><span class='op'>(</span>max_size <span class='op'>=</span> <span class='fl'>100</span> <span class='op'>*</span> <span class='fl'>1024</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>)</span>
-<span class='va'>d</span> <span class='op'>&lt;-</span> <span class='fu'><a href='cache_disk.html'>cache_disk</a></span><span class='op'>(</span>max_size <span class='op'>=</span> <span class='fl'>2</span> <span class='op'>*</span> <span class='fl'>1024</span><span class='op'>^</span><span class='fl'>3</span><span class='op'>)</span>
-<span class='va'>cl</span> <span class='op'>&lt;-</span> <span class='fu'>cache_layered</span><span class='op'>(</span><span class='va'>m</span>, <span class='va'>d</span><span class='op'>)</span>
-</div></pre>
+    <pre class="examples"><span class='r-in'></span>
+<span class='r-in'><span class='co'># Make a layered cache from a small memory cache and large disk cache</span></span>
+<span class='r-in'><span class='va'>m</span> <span class='op'>&lt;-</span> <span class='fu'><a href='cache_mem.html'>cache_mem</a></span><span class='op'>(</span>max_size <span class='op'>=</span> <span class='fl'>100</span> <span class='op'>*</span> <span class='fl'>1024</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>)</span></span>
+<span class='r-in'><span class='va'>d</span> <span class='op'>&lt;-</span> <span class='fu'><a href='cache_disk.html'>cache_disk</a></span><span class='op'>(</span>max_size <span class='op'>=</span> <span class='fl'>2</span> <span class='op'>*</span> <span class='fl'>1024</span><span class='op'>^</span><span class='fl'>3</span><span class='op'>)</span></span>
+<span class='r-in'><span class='va'>cl</span> <span class='op'>&lt;-</span> <span class='fu'>cache_layered</span><span class='op'>(</span><span class='va'>m</span>, <span class='va'>d</span><span class='op'>)</span></span>
+</pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

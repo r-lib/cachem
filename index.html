@@ -116,7 +116,7 @@
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"cachem"</span><span class="op">)</span></code></pre></div>
 <p>You can install the development version from with:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="kw"><a href="https://rdrr.io/r/base/library.html">require</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span>
+<code class="sourceCode R"><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="kw"><a href="https://rdrr.io/r/base/library.html">require</a></span><span class="op">(</span><span class="st"><a href="https://remotes.r-lib.org">"remotes"</a></span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span>
 <span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"r-lib/cachem"</span><span class="op">)</span></code></pre></div>
 </div>
 <div id="usage" class="section level2">
@@ -130,11 +130,12 @@
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">m</span><span class="op">$</span><span class="fu">set</span><span class="op">(</span><span class="st">"abc123"</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"Hello"</span>, <span class="st">"world"</span><span class="op">)</span><span class="op">)</span>
 <span class="va">m</span><span class="op">$</span><span class="fu">set</span><span class="op">(</span><span class="st">"xyz"</span>, <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/message.html">message</a></span><span class="op">(</span><span class="st">"Goodbye"</span><span class="op">)</span><span class="op">)</span></code></pre></div>
-<p>The <code>key</code> must be a string consisting of lowercase letters, numbers, and the underscore (<code>_</code>) and hyphen (<code><a href="https://rdrr.io/r/base/Arithmetic.html">-</a></code>) characters. (Upper-case characters are not allowed because some storage backends do not distinguish between lowercase and uppercase letters.) The <code>value</code> can be any R object.</p>
+<p>The <code>key</code> must be a string consisting of lowercase letters, numbers, and the underscore (<code>_</code>) and hyphen (<code>-</code>) characters. (Upper-case characters are not allowed because some storage backends do not distinguish between lowercase and uppercase letters.) The <code>value</code> can be any R object.</p>
 <p>Get the values with <code>$get()</code>:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"abc123"</span><span class="op">)</span>
 <span class="co">#&gt; [1] "Hello" "world"</span>
+
 <span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"xyz"</span><span class="op">)</span>
 <span class="co">#&gt; function() message("Goodbye")</span></code></pre></div>
 <p>If you call <code><a href="https://rdrr.io/r/base/get.html">get()</a></code> on a key that doesn’t exists, it will return a <code><a href="https://r-lib.github.io/fastmap/reference/key_missing.html">key_missing()</a></code> sentinel value:</p>
@@ -182,7 +183,7 @@
 <p>An advantage that the memory cache has over the disk cache (and any other type of cache that stores the objects outside of the R process’s memory), is that it does not need to serialize objects. Instead, it merely stores references to the objects. This means that it can store objects that other caches cannot, and with more efficient use of memory – if two objects in the cache share some of their contents (such that they refer to the same sub-object in memory), then <code>cache_mem</code> will not create duplicate copies of the contents, as <code>cache_disk</code> would, since it serializes the objects with the <code><a href="https://rdrr.io/r/base/serialize.html">serialize()</a></code> function.</p>
 <p>Compared to the memory usage, the size <em>calculation</em> is not as intelligent: if there are two objects that share contents, their sizes are computed separately, even if they have items that share the exact same represention in memory. This is done with the <code><a href="https://rdrr.io/r/utils/object.size.html">object.size()</a></code> function, which does not account for multiple references to the same object in memory.</p>
 <p>In short, a memory cache, if anything, over-counts the amount of memory actually consumed. In practice, this means that if you set a 200MB limit to the size of cache, and the cache <em>thinks</em> it has 200MB of contents, the actual amount of memory consumed could be less than 200MB.</p>
-<details><p><summary>Demonstration of memory over-counting from <code><a href="https://rdrr.io/r/utils/object.size.html">object.size()</a></code></summary></p>
+<details><p><summary>Demonstration of memory over-counting from <code>object.size()</code></summary></p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co"># Create a and b which both contain the same numeric vector.</span>
 <span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">1e5</span><span class="op">)</span><span class="op">)</span>
@@ -201,9 +202,9 @@
 <span class="co">#&gt; 800224 bytes</span></code></pre></div>
 <p>For reference, lobstr::obj_size can detect shared objects, and knows that these objects share most of their memory.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu">lobstr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/lobstr/man/obj_size.html">obj_size</a></span><span class="op">(</span><span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"a"</span><span class="op">)</span><span class="op">)</span>
+<code class="sourceCode R"><span class="fu">lobstr</span><span class="fu">::</span><span class="fu">obj_size</span><span class="op">(</span><span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"a"</span><span class="op">)</span><span class="op">)</span>
 <span class="co">#&gt; 800,224 B</span>
-<span class="fu">lobstr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/lobstr/man/obj_size.html">obj_size</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"a"</span><span class="op">)</span>, <span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"b"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
+<span class="fu">lobstr</span><span class="fu">::</span><span class="fu">obj_size</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"a"</span><span class="op">)</span>, <span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"b"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
 <span class="co">#&gt; 800,408 B</span></code></pre></div>
 <p>However, lobstr is not on CRAN, and if obj_size() were used to find the incremental memory used when an object was added to the cache, it would have to walk all objects in the cache every time a single object is added. For these reasons, cache_mem uses <code><a href="https://rdrr.io/r/utils/object.size.html">object.size()</a></code> to compute the object sizes.</p>
 </details>
@@ -271,13 +272,13 @@
 <p><code><a href="reference/cache_mem.html">cache_mem()</a></code> and <code><a href="reference/cache_disk.html">cache_disk()</a></code> support all of the methods listed below. If you want to create a compatible caching object, it must have at least the <code><a href="https://rdrr.io/r/base/get.html">get()</a></code> and <code>set()</code> methods:</p>
 <ul>
 <li>
-<code><a href="https://rdrr.io/r/base/get.html">get(key, missing = missing_)</a></code>: Get the object associated with <code>key</code>. The <code>missing</code> parameter allows customized behavior if the key is not present: it actually is an expression which is evaluated when there is a cache miss, and it could return a value or throw an error.</li>
+<code>get(key, missing = missing_)</code>: Get the object associated with <code>key</code>. The <code>missing</code> parameter allows customized behavior if the key is not present: it actually is an expression which is evaluated when there is a cache miss, and it could return a value or throw an error.</li>
 <li>
 <code>set(key, value)</code>: Set a key to a value.</li>
 <li>
-<code><a href="https://rdrr.io/r/base/exists.html">exists(key)</a></code>: Check whether a particular key exists in the cache.</li>
+<code>exists(key)</code>: Check whether a particular key exists in the cache.</li>
 <li>
-<code><a href="https://rdrr.io/r/base/rm.html">remove(key)</a></code>: Remove a key-value from the cache.</li>
+<code>remove(key)</code>: Remove a key-value from the cache.</li>
 </ul>
 <p>Some optional methods:</p>
 <ul>
@@ -295,7 +296,7 @@
 <p>For these methods:</p>
 <ul>
 <li>
-<code>key</code>: can be any string with lowercase letters, numbers, underscore (<code>_</code>) and hyphen (<code><a href="https://rdrr.io/r/base/Arithmetic.html">-</a></code>). Some storage backends may not be handle very long keys well. For example, with a <code><a href="reference/cache_disk.html">cache_disk()</a></code>, the key is used as a filename, and on some filesystems, very filenames may hit limits on path lengths.</li>
+<code>key</code>: can be any string with lowercase letters, numbers, underscore (<code>_</code>) and hyphen (<code>-</code>). Some storage backends may not be handle very long keys well. For example, with a <code><a href="reference/cache_disk.html">cache_disk()</a></code>, the key is used as a filename, and on some filesystems, very filenames may hit limits on path lengths.</li>
 <li>
 <code>value</code>: can be any R object, with some exceptions noted below.</li>
 </ul>

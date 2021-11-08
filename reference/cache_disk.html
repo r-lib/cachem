@@ -178,7 +178,7 @@ finalized.</p></td>
     </tr>
     <tr>
       <th>missing</th>
-      <td><p>A value to return when <code><a href='https://rdrr.io/r/base/get.html'>get(key)</a></code> is called but the key is not
+      <td><p>A value to return when <code>get(key)</code> is called but the key is not
 present in the cache. The default is a <code><a href='https://r-lib.github.io/fastmap/reference/key_missing.html'>key_missing()</a></code> object. It is
 actually an expression that is evaluated each time there is a cache miss.
 See section Missing keys for more information.</p></td>
@@ -294,11 +294,11 @@ slow performance of networked file systems can cause problems. If you need
 a high-performance shared cache, you can use one built on a database like
 Redis, SQLite, mySQL, or similar.</p>
 <p>When multiple processes share a cache directory, there are some potential
-race conditions. For example, if your code calls <code><a href='https://rdrr.io/r/base/exists.html'>exists(key)</a></code> to check if
-an object is in the cache, and then call <code><a href='https://rdrr.io/r/base/get.html'>get(key)</a></code>, the object may be
-removed from the cache in between those two calls, and <code><a href='https://rdrr.io/r/base/get.html'>get(key)</a></code> will
+race conditions. For example, if your code calls <code>exists(key)</code> to check if
+an object is in the cache, and then call <code>get(key)</code>, the object may be
+removed from the cache in between those two calls, and <code>get(key)</code> will
 throw an error. Instead of calling the two functions, it is better to
-simply call <code><a href='https://rdrr.io/r/base/get.html'>get(key)</a></code>, and check that the returned object is not a
+simply call <code>get(key)</code>, and check that the returned object is not a
 <code><a href='https://r-lib.github.io/fastmap/reference/key_missing.html'>key_missing()</a></code> object, using <code><a href='https://r-lib.github.io/fastmap/reference/key_missing.html'>is.key_missing()</a></code>. This effectively tests
 for existence and gets the object in one operation.</p>
 <p>It is also possible for one processes to prune objects at the same time
@@ -312,15 +312,15 @@ already been deleted.</p>
 
 <p>A disk cache object has the following methods:</p>
 <dl>
-<dt><code><a href='https://rdrr.io/r/base/get.html'>get(key, missing)</a></code></dt><dd><p>Returns the value associated with <code>key</code>. If the key is not in the
+<dt><code>get(key, missing)</code></dt><dd><p>Returns the value associated with <code>key</code>. If the key is not in the
 cache, then it evaluates the expression specified by <code>missing</code> and
 returns the value. If <code>missing</code> is specified here, then it will
 override the default that was set when the <code>cache_mem</code> object was
 created. See section Missing Keys for more information.</p></dd>
 <dt><code>set(key, value)</code></dt><dd><p>Stores the <code>key</code>-<code>value</code> pair in the cache.</p></dd>
-<dt><code><a href='https://rdrr.io/r/base/exists.html'>exists(key)</a></code></dt><dd><p>Returns <code>TRUE</code> if the cache contains the key, otherwise
+<dt><code>exists(key)</code></dt><dd><p>Returns <code>TRUE</code> if the cache contains the key, otherwise
 <code>FALSE</code>.</p></dd>
-<dt><code><a href='https://rdrr.io/r/base/rm.html'>remove(key)</a></code></dt><dd><p>Removes <code>key</code> from the cache, if it exists in the cache. If the key is
+<dt><code>remove(key)</code></dt><dd><p>Removes <code>key</code> from the cache, if it exists in the cache. If the key is
 not in the cache, this does nothing.</p></dd>
 <dt><code>size()</code></dt><dd><p>Returns the number of items currently in the cache.</p></dd>
 <dt><code>keys()</code></dt><dd><p>Returns a character vector of all keys currently in the cache.</p></dd>
