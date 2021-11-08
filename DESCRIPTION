@@ -16,7 +16,7 @@ Imports:
     fastmap
 Suggests:
     testthat
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 Roxygen: list(markdown = TRUE)
 Config/Needs/routine:
     lobstr
