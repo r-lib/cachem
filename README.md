@@ -81,6 +81,7 @@ Get the values with `$get()`:
 ``` r
 m$get("abc123")
 #> [1] "Hello" "world"
+
 m$get("xyz")
 #> function() message("Goodbye")
 ```

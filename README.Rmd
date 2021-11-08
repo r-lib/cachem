@@ -65,10 +65,12 @@ m$set("xyz", function() message("Goodbye"))
 The `key` must be a string consisting of lowercase letters, numbers, and the underscore (`_`) and hyphen (`-`) characters. (Upper-case characters are not allowed because some storage backends do not distinguish between lowercase and uppercase letters.) The `value` can be any R object.
 
 Get the values with `$get()`:
-```{r}
+``` r
 m$get("abc123")
+#> [1] "Hello" "world"
 
 m$get("xyz")
+#> function() message("Goodbye")
 ```
 
 If you call `get()` on a key that doesn't exists, it will return a `key_missing()` sentinel value:
