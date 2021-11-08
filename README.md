@@ -81,8 +81,10 @@ Get the values with `$get()`:
 ``` r
 m$get("abc123")
 #> [1] "Hello" "world"
+
 m$get("xyz")
 #> function() message("Goodbye")
+#> <environment: 0x5642851d2ed8>
 ```
 
 If you call `get()` on a key that doesn’t exists, it will return a
