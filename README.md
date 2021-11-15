@@ -17,9 +17,8 @@
 # cachem
 
 <!-- badges: start -->
-
-[![R build
-status](https://github.com/r-lib/cachem/workflows/R-CMD-check/badge.svg)](https://github.com/r-lib/cachem/actions)
+![R build
+status](https://github.com/r-lib/cachem/actions/workflows/R-CMD-check.yaml/badge.svg)
 <!-- badges: end -->
 
 The **cachem** R package provides objects creating and managing caches.
