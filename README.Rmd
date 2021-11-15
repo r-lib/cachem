@@ -21,8 +21,7 @@ knitr::opts_chunk$set(
 # cachem
 
 <!-- badges: start -->
-[![R build
-status](https://github.com/r-lib/cachem/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/r-lib/cachem/actions)
+[![R build status](https://github.com/r-lib/cachem/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/r-lib/cachem/actions)
 <!-- badges: end -->
 
 The **cachem** R package provides objects creating and managing caches. These cache objects are key-value stores, but unlike other basic key-value stores, they have built-in support for memory and age limits so that they won't have unbounded growth.
