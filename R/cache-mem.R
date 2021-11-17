@@ -54,11 +54,7 @@
 #'
 #'   If the size of the objects in the cache exceeds `max_size`, then objects
 #'   will be removed from the cache. Objects will be removed from the cache so
-#'   that the total size remains under `max_size`. Note that the size is
-#'   calculated using the size of the files, not the size of disk space used by
-#'   the files --- these two values can differ because of files are stored in
-#'   blocks on disk. For example, if the block size is 4096 bytes, then a file
-#'   that is one byte in size will take 4096 bytes on disk.
+#'   that the total size remains under `max_size`.
 #'
 #'   Another time that objects can be removed from the cache is when `get()` is
 #'   called. If the target object is older than `max_age`, it will be removed
