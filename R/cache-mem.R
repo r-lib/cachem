@@ -117,6 +117,9 @@
 #'     }
 #'   }
 #'
+#' @param max_size Maximum size of the cache, in bytes. If the cache exceeds
+#'   this size, cached objects will be removed according to the value of the
+#'   `evict`. Use `Inf` for no size limit. The default is 512 megabytes.
 #' @inheritParams cache_disk
 #'
 #' @return A memory caching object, with class `cache_mem`.
