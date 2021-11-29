@@ -142,7 +142,7 @@ the parameters <code>max_size</code>, <code>max_age</code>, <code>max_n</code>, 
       <th>max_size</th>
       <td><p>Maximum size of the cache, in bytes. If the cache exceeds
 this size, cached objects will be removed according to the value of the
-<code>evict</code>. Use <code>Inf</code> for no size limit. The default is 1 gigabyte.</p></td>
+<code>evict</code>. Use <code>Inf</code> for no size limit. The default is 512 megabytes.</p></td>
     </tr>
     <tr>
       <th>max_age</th>
@@ -221,11 +221,7 @@ the <code>evict</code> parameter. Objects will be removed so that the number of 
 is <code>max_n</code>.</p>
 <p>If the size of the objects in the cache exceeds <code>max_size</code>, then objects
 will be removed from the cache. Objects will be removed from the cache so
-that the total size remains under <code>max_size</code>. Note that the size is
-calculated using the size of the files, not the size of disk space used by
-the files --- these two values can differ because of files are stored in
-blocks on disk. For example, if the block size is 4096 bytes, then a file
-that is one byte in size will take 4096 bytes on disk.</p>
+that the total size remains under <code>max_size</code>.</p>
 <p>Another time that objects can be removed from the cache is when <code><a href='https://rdrr.io/r/base/get.html'>get()</a></code> is
 called. If the target object is older than <code>max_age</code>, it will be removed
 and the cache will report it as a missing value.</p>
