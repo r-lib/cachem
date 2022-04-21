@@ -137,7 +137,7 @@ disk cache.
 
 ### `cache_mem()`
 
-The memory cache stores stores objects in memory, by simply keeping a
+The memory cache stores objects in memory, by simply keeping a
 reference to each object. To create a memory cache:
 
 ``` r
