@@ -250,7 +250,7 @@ cache_disk <- function(
   # so that, in the case where multiple cache_disk objects that point to the
   # same directory are created and discarded after just a few uses each,
   # pruning will still occur.
-  prune_throttle_counter_ <- sample.int(prune_rate_, 1) - 1
+  prune_throttle_counter_ <- with_private_seed(sample.int(prune_rate_, 1) - 1)
   prune_last_time_        <- as.numeric(Sys.time())
 
   if (destroy_on_finalize_) {
