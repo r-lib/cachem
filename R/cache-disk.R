@@ -198,14 +198,14 @@
 #' @export
 cache_disk <- function(
   dir = NULL,
-  read_fn = NULL,
-  write_fn = NULL,
-  extension = ".rds",
   max_size = 1024 * 1024 ^ 2,
   max_age = Inf,
   max_n = Inf,
   evict = c("lru", "fifo"),
   destroy_on_finalize = FALSE,
+  read_fn = NULL,
+  write_fn = NULL,
+  extension = ".rds",
   missing = key_missing(),
   prune_rate = 20,
   warn_ref_objects = FALSE,
