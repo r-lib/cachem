@@ -160,6 +160,11 @@
 #'
 #' @param dir Directory to store files for the cache. If `NULL` (the default) it
 #'   will create and use a temporary directory.
+#' @param read_fn The function used to read the values from disk. If `NULL`
+#'   (the default) it will use `readRDS`.
+#' @param write_fn The function used to write the values from disk. If `NULL`
+#'   (the default) it will use `writeRDS`.
+#' @param extension The file extension to use for files on disk.
 #' @param max_age Maximum age of files in cache before they are evicted, in
 #'   seconds. Use `Inf` for no age limit.
 #' @param max_size Maximum size of the cache, in bytes. If the cache exceeds
@@ -193,6 +198,9 @@
 #' @export
 cache_disk <- function(
   dir = NULL,
+  read_fn = NULL,
+  write_fn = NULL,
+  extension = ".rds",
   max_size = 1024 * 1024 ^ 2,
   max_age = Inf,
   max_n = Inf,
@@ -236,6 +244,10 @@ cache_disk <- function(
 
   logfile_             <- logfile
   dir_                 <- normalizePath(dir)
+  extension_           <- extension
+  extension_regex_     <- sub("\\.(.*)", "\\\\.\\1$", extension)
+  read_fn_             <- read_fn
+  write_fn_            <- write_fn
   max_size_            <- max_size
   max_age_             <- max_age
   max_n_               <- max_n
@@ -245,6 +257,35 @@ cache_disk <- function(
   prune_rate_          <- prune_rate
 
   destroyed_           <- FALSE
+
+
+  if (is.null(read_fn_)) {
+    read_fn_ <- readRDS
+  }
+
+  if (is.null(write_fn_)) {
+    write_fn_ <- local({
+      ref_object <- FALSE
+      function(value, file) {
+        on.exit({
+          ref_object <<- TRUE
+          unlink(temp_file)
+        })
+        temp_file <- paste0(file, "-temp-", random_hex(16))
+        saveRDS(value, file = temp_file,
+          refhook = function(x) {
+            ref_object <<- TRUE
+            NULL
+          }
+        )
+        file.rename(temp_file, file)
+        if (warn_ref_objects && ref_object) {
+          log_(paste0('set: value is a reference object'))
+          warning("A reference object was cached in a serialized format. The restored object may not work as expected.")
+        }
+      }
+    })
+  }
 
   # Start the prune throttle counter with a random number from 0-19. This is
   # so that, in the case where multiple cache_disk objects that point to the
@@ -278,7 +319,7 @@ cache_disk <- function(
     read_error <- FALSE
     tryCatch(
       {
-        value <- suppressWarnings(readRDS(filename))
+        value <- suppressWarnings(read_fn_(filename))
         if (evict_ == "lru"){
           Sys.setFileTime(filename, Sys.time())
         }
@@ -303,34 +344,19 @@ cache_disk <- function(
     validate_key(key)
 
     file <- key_to_filename_(key)
-    temp_file <- paste0(file, "-temp-", random_hex(16))
 
     save_error <- FALSE
-    ref_object <- FALSE
     tryCatch(
       {
-        saveRDS(value, file = temp_file,
-          refhook = function(x) {
-            ref_object <<- TRUE
-            NULL
-          }
-        )
-        file.rename(temp_file, file)
+        write_fn_(value, file)
       },
       error = function(e) {
         save_error <<- TRUE
-        # Unlike file.remove(), unlink() does not raise warning if file does
-        # not exist.
-        unlink(temp_file)
       }
     )
     if (save_error) {
       log_(paste0('set: key "', key, '" error'))
       stop('Error setting value for key "', key, '".')
-    }
-    if (warn_ref_objects && ref_object) {
-      log_(paste0('set: value is a reference object'))
-      warning("A reference object was cached in a serialized format. The restored object may not work as expected.")
     }
 
     prune_throttled_()
@@ -346,8 +372,8 @@ cache_disk <- function(
   # Return all keys in the cache
   keys <- function() {
     is_destroyed(throw = TRUE)
-    files <- dir(dir_, "\\.rds$")
-    sub("\\.rds$", "", files)
+    files <- dir(dir_, extension_regex_)
+    sub(extension_regex_, "", files)
   }
 
   remove <- function(key) {
@@ -363,7 +389,7 @@ cache_disk <- function(
   reset <- function() {
     log_(paste0('reset'))
     is_destroyed(throw = TRUE)
-    file.remove(dir(dir_, "\\.rds$", full.names = TRUE))
+    file.remove(dir(dir_, extension_regex_, full.names = TRUE))
     invisible(TRUE)
   }
 
@@ -380,7 +406,7 @@ cache_disk <- function(
 
     current_time <- Sys.time()
 
-    filenames <- dir(dir_, "\\.rds$", full.names = TRUE)
+    filenames <- dir(dir_, extension_regex_, full.names = TRUE)
     info <- file.info(filenames, extra_cols = FALSE)
     info <- info[info$isdir == FALSE, ]
     info$name <- rownames(info)
@@ -442,7 +468,7 @@ cache_disk <- function(
 
   size <- function() {
     is_destroyed(throw = TRUE)
-    length(dir(dir_, "\\.rds$"))
+    length(dir(dir_, extension_regex_))
   }
 
   info <- function() {
@@ -473,8 +499,8 @@ cache_disk <- function(
     # the directory after unlink starts removing files but before it removes
     # the directory, and when that happens, the directory removal will fail.
     file.create(file.path(dir_, "__destroyed__"))
-    # Remove all the .rds files. This will not remove the setinel file.
-    file.remove(dir(dir_, "\\.rds$", full.names = TRUE))
+    # Remove all the extension files. This will not remove the setinel file.
+    file.remove(dir(dir_, extension_regex_, full.names = TRUE))
     # Next remove dir recursively, including sentinel file.
     unlink(dir_, recursive = TRUE)
     destroyed_ <<- TRUE
@@ -509,7 +535,7 @@ cache_disk <- function(
     if (nchar(key) > 80) {
       stop("Invalid key: key must have fewer than 80 characters.")
     }
-    file.path(dir_, paste0(key, ".rds"))
+    file.path(dir_, paste0(key, extension_))
   }
 
   # A wrapper for prune() that throttles it, because prune() can be expensive
@@ -534,7 +560,7 @@ cache_disk <- function(
   maybe_prune_single_ <- function(key) {
     # obj <- cache_[[key]]
     # if (is.null(obj)) return()
-    filepath <- file.path(dir_, paste0(key, ".rds"))
+    filepath <- file.path(dir_, paste0(key, extension_))
     info <- file.info(filepath, extra_cols = FALSE)
     if (is.na(info$mtime)) return()
 

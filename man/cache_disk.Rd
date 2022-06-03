@@ -6,6 +6,9 @@
 \usage{
 cache_disk(
   dir = NULL,
+  extension = ".rds",
+  read_fn = NULL,
+  write_fn = NULL,
   max_size = 1024 * 1024^2,
   max_age = Inf,
   max_n = Inf,
@@ -20,6 +23,14 @@ cache_disk(
 \arguments{
 \item{dir}{Directory to store files for the cache. If \code{NULL} (the default) it
 will create and use a temporary directory.}
+
+\item{extension}{The file extension to use for files on disk.}
+
+\item{read_fn}{The function used to read the values from disk. If \code{NULL}
+(the default) it will use \code{readRDS}.}
+
+\item{write_fn}{The function used to write the values from disk. If \code{NULL}
+(the default) it will use \code{writeRDS}.}
 
 \item{max_size}{Maximum size of the cache, in bytes. If the cache exceeds
 this size, cached objects will be removed according to the value of the
