@@ -11,6 +11,9 @@ cache_disk(
   max_n = Inf,
   evict = c("lru", "fifo"),
   destroy_on_finalize = FALSE,
+  read_fn = NULL,
+  write_fn = NULL,
+  extension = ".rds",
   missing = key_missing(),
   prune_rate = 20,
   warn_ref_objects = FALSE,
@@ -39,6 +42,14 @@ when a cache pruning occurs. Currently, \code{"lru"} and \code{"fifo"} are suppo
 garbage collected, the cache directory and all objects inside of it will be
 deleted from disk. If \code{FALSE} (the default), it will do nothing when
 finalized.}
+
+\item{read_fn}{The function used to read the values from disk. If \code{NULL}
+(the default) it will use \code{readRDS}.}
+
+\item{write_fn}{The function used to write the values from disk. If \code{NULL}
+(the default) it will use \code{writeRDS}.}
+
+\item{extension}{The file extension to use for files on disk.}
 
 \item{missing}{A value to return when \code{get(key)} is called but the key is not
 present in the cache. The default is a \code{\link[=key_missing]{key_missing()}} object. It is

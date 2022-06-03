@@ -232,3 +232,14 @@ test_that("Warnings for caching reference objects", {
   expect_silent(d$set("a", function() NULL))
   expect_silent(d$set("a", fastmap()))
 })
+
+test_that("Cache disk can use different formts", {
+  my_write <- function(...) write.csv(..., row.names = FALSE)
+
+  d <- cache_disk(read_fn = read.csv, write_fn = my_write, extension = ".csv")
+
+  mt <- mtcars
+  rownames(mt) <- NULL
+  d$set("mt", mt)
+  expect_equal(d$get("mt"), mt)
+})
