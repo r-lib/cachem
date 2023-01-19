@@ -464,11 +464,8 @@ cache_mem <- function(
     if (PRUNE_BY_AGE) {
       idx <- key_idx_map_$get(key)
       time <- as.numeric(Sys.time())
-      age <- max(0, (mtime_[idx] + max_age_) - time)
-      if (!isTRUE(age > 0)) {
-        remove_(key)
-        age <- NA_real_
-      }
+      age <- (mtime_[idx] + max_age_) - time
+      if (!isTRUE(age > 0)) age <- NA_real_
       age
     } else Inf
   }

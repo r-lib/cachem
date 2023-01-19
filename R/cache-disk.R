@@ -496,8 +496,11 @@ cache_disk <- function(
     validate_key(key)
     maybe_prune_single_(key)
     if (is.finite(max_age_)) {
-      max(0, difftime(Sys.time(), file.info(key_to_filename_(key))$mtime + max_age_,
-                      units = "secs"))
+      time <- as.numeric(Sys.time())
+      mtime <- as.numeric(file.info(key_to_filename_(key))$mtime, units = "secs")
+      age <- mtime + max_age_ - time
+      if (!isTRUE(age > 0)) age <- NA_real_
+      age
     } else Inf
   }
 
