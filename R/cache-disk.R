@@ -139,6 +139,10 @@
 #'       Removes `key` from the cache, if it exists in the cache. If the key is
 #'       not in the cache, this does nothing.
 #'     }
+#'     \item{`ttl(key)`}{
+#'       Returns the time to live (seconds), using the parameters specified by
+#'       `max_age`.
+#'     }
 #'     \item{`size()`}{
 #'       Returns the number of items currently in the cache.
 #'     }
@@ -487,6 +491,16 @@ cache_disk <- function(
     )
   }
 
+  ttl <- function(key) {
+    is_destroyed(throw = TRUE)
+    validate_key(key)
+    maybe_prune_single_(key)
+    if (is.finite(max_age_)) {
+      max(0, difftime(Sys.time(), file.info(key_to_filename_(key))$mtime + max_age_,
+                      units = "secs"))
+    } else Inf
+  }
+
   destroy <- function() {
     if (is_destroyed()) {
       return(invisible(FALSE))
@@ -582,6 +596,7 @@ cache_disk <- function(
       exists = exists,
       keys = keys,
       remove = remove,
+      ttl = ttl,
       reset = reset,
       prune = prune,
       size = size,
