@@ -1,3 +1,6 @@
+# cachem 1.0.7.9000
+
+
 # cachem 1.0.7
 
 * `cache_disk()` gains a `read_fn`, `write_fn` and `extension` arguments, to allow specifying custom formats for serializing object to disk. (@jimhester)
