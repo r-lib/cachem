@@ -356,7 +356,7 @@ d$keys()
 #> [1] "a" "b" "c"
 
 # The layered cache reports having all keys
-lc$keys()
+cl$keys()
 #> [1] "c" "b" "a"
 ```
 
@@ -369,7 +369,7 @@ x <- cl$get("c")
 #> [2020-10-23 13:11:09.985] cache_layered Get from cache_mem... hit
 
 # Get object that doesn't exist in the memory cache
-x <- cl$get("c")
+x <- cl$get("a")
 #> [2020-10-23 13:13:10.968] cache_layered Get: a
 #> [2020-10-23 13:13:10.969] cache_layered Get from cache_mem... miss
 #> [2020-10-23 13:13:11.329] cache_layered Get from cache_disk... hit
