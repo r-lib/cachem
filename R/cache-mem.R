@@ -196,20 +196,37 @@ cache_mem <- function(
   # current column-first approach is much, much faster.
   key_idx_map_  <- fastmap()
 
-  key_          <- rep_len(NA_character_, INITIAL_SIZE)
-  value_        <- vector("list",         INITIAL_SIZE)
-  size_         <- rep_len(NA_real_,      INITIAL_SIZE)
-  mtime_        <- rep_len(NA_real_,      INITIAL_SIZE)
-  atime_        <- rep_len(NA_real_,      INITIAL_SIZE)
+  # These values are set in the reset() method.
+  key_          <- NULL
+  value_        <- NULL
+  size_         <- NULL
+  mtime_        <- NULL
+  atime_        <- NULL
 
-  total_n_      <- 0L  # Total number of items
-  total_size_   <- 0   # Total number of bytes used
-  last_idx_     <- 0L  # Most recent (and largest) index used
+  total_n_      <- NULL  # Total number of items
+  total_size_   <- NULL  # Total number of bytes used
+  last_idx_     <- NULL  # Most recent (and largest) index used
 
 
   # ============================================================================
   # Public methods
   # ============================================================================
+
+  reset <- function() {
+    log_(paste0('reset'))
+    key_idx_map_$reset()
+    key_        <<- rep_len(NA_character_, INITIAL_SIZE)
+    value_      <<- vector("list",         INITIAL_SIZE)
+    size_       <<- rep_len(NA_real_,      INITIAL_SIZE)
+    mtime_      <<- rep_len(NA_real_,      INITIAL_SIZE)
+    atime_      <<- rep_len(NA_real_,      INITIAL_SIZE)
+
+    total_n_    <<- 0L
+    total_size_ <<- 0
+    last_idx_   <<- 0L
+    invisible(TRUE)
+  }
+
   get <- function(key, missing = missing_) {
     log_(paste0('get: key "', key, '"'))
     validate_key(key)
@@ -358,12 +375,6 @@ cache_mem <- function(
     log_(paste0('remove: key "', key, '"'))
     validate_key(key)
     remove_(key)
-    invisible(TRUE)
-  }
-
-  reset <- function() {
-    log_(paste0('reset'))
-    key_idx_map_$reset()
     invisible(TRUE)
   }
 
@@ -613,6 +624,9 @@ cache_mem <- function(
     text <- paste0(format(Sys.time(), "[%Y-%m-%d %H:%M:%OS3] cache_mem "), text)
     cat(text, sep = "\n", file = logfile_, append = TRUE)
   }
+
+
+  reset()
 
   # ============================================================================
   # Returned object
