@@ -1,4 +1,4 @@
-# cachem 1.0.7.9000
+# cachem 1.0.8
 
 * Fixed #38: With a `cache_mem`, `$reset()` did not fully reset the cache, and calling calling `$prune()` could result in an error. (#39)
 
