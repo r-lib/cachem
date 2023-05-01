@@ -19,6 +19,7 @@ Suggests:
 RoxygenNote: 7.2.3
 Roxygen: list(markdown = TRUE)
 Config/Needs/routine:
-    lobstr
+    lobstr,
+    qs
 Config/Needs/website:
     pkgdown
