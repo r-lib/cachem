@@ -21,6 +21,8 @@
 <![endif]-->
 </head>
 <body data-spy="scroll" data-target="#toc">
+    
+
     <div class="container template-home">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -33,18 +35,12 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">cachem</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.0.6.9000</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.0.7.9000</span>
       </span>
     </div>
 
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
-<li>
-  <a href="index.html">
-    <span class="fas fa-home fa-lg"></span>
-     
-  </a>
-</li>
 <li>
   <a href="reference/index.html">Reference</a>
 </li>
@@ -54,7 +50,7 @@
       </ul>
 <ul class="nav navbar-nav navbar-right">
 <li>
-  <a href="https://github.com/r-lib/cachem/">
+  <a href="https://github.com/r-lib/cachem/" class="external-link">
     <span class="fab fa-github fa-lg"></span>
      
   </a>
@@ -72,204 +68,218 @@
       </header><div class="row">
   <div class="contents col-md-9">
 
-<ul>
-<li>
-<a href="#cachem">cachem</a>
-<ul>
+<ul><li>
+<a href="#cachem">cachem</a><ul>
 <li><a href="#installation">Installation</a></li>
 <li><a href="#usage">Usage</a></li>
 <li>
-<a href="#cache-types">Cache types</a>
-<ul>
+<a href="#cache-types">Cache types</a><ul>
 <li><a href="#cache_mem"><code>cache_mem()</code></a></li>
 <li><a href="#cache_disk"><code>cache_disk()</code></a></li>
 </ul>
 </li>
-<li>
-<a href="#cache-api">Cache API</a>
-<ul>
-<li><a href="#limitations-of-serialized-objects">Limitations of serialized objects</a></li>
-<li><a href="#read-only-caches">Read-only caches</a></li>
-</ul>
-</li>
+<li><a href="#cache-api">Cache API</a></li>
 <li><a href="#pruning">Pruning</a></li>
 <li><a href="#layered-caches">Layered caches</a></li>
 </ul>
-</li>
-</ul>
-<!-- README.md is generated from README.Rmd. Please edit that file --><div id="cachem" class="section level1">
-<div class="page-header"><h1 class="hasAnchor">
-<a href="#cachem" class="anchor"></a>cachem</h1></div>
+</li></ul>
+<!-- README.md is generated from README.Rmd. Please edit that file --><div class="section level1">
+<div class="page-header"><h1 id="cachem">cachem<a class="anchor" aria-label="anchor" href="#cachem"></a>
+</h1></div>
 <!-- badges: start -->
-
 <p>The <strong>cachem</strong> R package provides objects creating and managing caches. These cache objects are key-value stores, but unlike other basic key-value stores, they have built-in support for memory and age limits so that they won’t have unbounded growth.</p>
 <p>The cache objects in <strong>cachem</strong> differ from some other key-value stores in the following ways:</p>
 <ul>
 <li>The cache objects provide automatic pruning so that they remain within memory limits.</li>
-<li>Fetching a non-existing object returns a sentinel value. An alternative is to simply return <code>NULL</code>. This is what R lists and environments do, but it is ambiguous whether the value really is <code>NULL</code>, or if it is not present. Another alternative is to throw an exception when fetching a non-existent object. However, this results in more complicated code, as every <code><a href="https://rdrr.io/r/base/get.html">get()</a></code> needs to be wrapped in a <code><a href="https://rdrr.io/r/base/conditions.html">tryCatch()</a></code>.</li>
+<li>Fetching a non-existing object returns a sentinel value. An alternative is to simply return <code>NULL</code>. This is what R lists and environments do, but it is ambiguous whether the value really is <code>NULL</code>, or if it is not present. Another alternative is to throw an exception when fetching a non-existent object. However, this results in more complicated code, as every <code><a href="https://rdrr.io/r/base/get.html" class="external-link">get()</a></code> needs to be wrapped in a <code><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch()</a></code>.</li>
 </ul>
-<div id="installation" class="section level2">
-<h2 class="hasAnchor">
-<a href="#installation" class="anchor"></a>Installation</h2>
+<div class="section level2">
+<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+</h2>
 <p>To install the CRAN version:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"cachem"</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"cachem"</span><span class="op">)</span></span></code></pre></div>
 <p>You can install the development version from with:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="kw"><a href="https://rdrr.io/r/base/library.html">require</a></span><span class="op">(</span><span class="st"><a href="https://remotes.r-lib.org">"remotes"</a></span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span>
-<span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"r-lib/cachem"</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">require</a></span><span class="op">(</span><span class="st"><a href="https://remotes.r-lib.org" class="external-link">"remotes"</a></span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"r-lib/cachem"</span><span class="op">)</span></span></code></pre></div>
 </div>
-<div id="usage" class="section level2">
-<h2 class="hasAnchor">
-<a href="#usage" class="anchor"></a>Usage</h2>
+<div class="section level2">
+<h2 id="usage">Usage<a class="anchor" aria-label="anchor" href="#usage"></a>
+</h2>
 <p>To create a memory-based cache, call <code><a href="reference/cache_mem.html">cache_mem()</a></code>.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://cachem.r-lib.org/">cachem</a></span><span class="op">)</span>
-<span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cache_mem.html">cache_mem</a></span><span class="op">(</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://cachem.r-lib.org/">cachem</a></span><span class="op">)</span></span>
+<span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cache_mem.html">cache_mem</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>Add arbitrary R objects to the cache using <code>$set(key, value)</code>:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">m</span><span class="op">$</span><span class="fu">set</span><span class="op">(</span><span class="st">"abc123"</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"Hello"</span>, <span class="st">"world"</span><span class="op">)</span><span class="op">)</span>
-<span class="va">m</span><span class="op">$</span><span class="fu">set</span><span class="op">(</span><span class="st">"xyz"</span>, <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/message.html">message</a></span><span class="op">(</span><span class="st">"Goodbye"</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">m</span><span class="op">$</span><span class="fu">set</span><span class="op">(</span><span class="st">"abc123"</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Hello"</span>, <span class="st">"world"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">m</span><span class="op">$</span><span class="fu">set</span><span class="op">(</span><span class="st">"xyz"</span>, <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"Goodbye"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>The <code>key</code> must be a string consisting of lowercase letters, numbers, and the underscore (<code>_</code>) and hyphen (<code>-</code>) characters. (Upper-case characters are not allowed because some storage backends do not distinguish between lowercase and uppercase letters.) The <code>value</code> can be any R object.</p>
 <p>Get the values with <code>$get()</code>:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"abc123"</span><span class="op">)</span>
-<span class="co">#&gt; [1] "Hello" "world"</span>
-
-<span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"xyz"</span><span class="op">)</span>
-<span class="co">#&gt; function() message("Goodbye")</span></code></pre></div>
-<p>If you call <code><a href="https://rdrr.io/r/base/get.html">get()</a></code> on a key that doesn’t exists, it will return a <code><a href="https://r-lib.github.io/fastmap/reference/key_missing.html">key_missing()</a></code> sentinel value:</p>
+<code class="sourceCode R"><span><span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"abc123"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "Hello" "world"</span></span>
+<span></span>
+<span><span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"xyz"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; function() message("Goodbye")</span></span></code></pre></div>
+<p>If you call <code><a href="https://rdrr.io/r/base/get.html" class="external-link">get()</a></code> on a key that doesn’t exists, it will return a <code><a href="https://r-lib.github.io/fastmap/reference/key_missing.html" class="external-link">key_missing()</a></code> sentinel value:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"dog"</span><span class="op">)</span>
-<span class="co">#&gt; &lt;Key Missing&gt;</span></code></pre></div>
-<p>A common usage pattern is to call <code><a href="https://rdrr.io/r/base/get.html">get()</a></code>, and then check if the result is a <code>key_missing</code> object:</p>
+<code class="sourceCode R"><span><span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"dog"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; &lt;Key Missing&gt;</span></span></code></pre></div>
+<p>A common usage pattern is to call <code><a href="https://rdrr.io/r/base/get.html" class="external-link">get()</a></code>, and then check if the result is a <code>key_missing</code> object:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">value</span> <span class="op">&lt;-</span> <span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="va">key</span><span class="op">)</span>
-
-<span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://r-lib.github.io/fastmap/reference/key_missing.html">is.key_missing</a></span><span class="op">(</span><span class="va">value</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span>
-  <span class="co"># Cache miss - do something</span>
-<span class="op">}</span> <span class="kw">else</span> <span class="op">{</span>
-  <span class="co"># Cache hit - do another thing</span>
-<span class="op">}</span></code></pre></div>
-<p>The reason for doing this (instead of calling <code>$exists(key)</code> and then <code>$get(key)</code>) is that for some storage backends, there is a potential race condition: the object could be removed from the cache between the <code><a href="https://rdrr.io/r/base/exists.html">exists()</a></code> and <code><a href="https://rdrr.io/r/base/get.html">get()</a></code> calls. For example:</p>
+<code class="sourceCode R"><span><span class="va">value</span> <span class="op">&lt;-</span> <span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="va">key</span><span class="op">)</span></span>
+<span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://r-lib.github.io/fastmap/reference/key_missing.html" class="external-link">is.key_missing</a></span><span class="op">(</span><span class="va">value</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="co"># Cache miss - do something</span></span>
+<span><span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span>  <span class="co"># Cache hit - do another thing</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<p>The reason for doing this (instead of calling <code>$exists(key)</code> and then <code>$get(key)</code>) is that for some storage backends, there is a potential race condition: the object could be removed from the cache between the <code><a href="https://rdrr.io/r/base/exists.html" class="external-link">exists()</a></code> and <code><a href="https://rdrr.io/r/base/get.html" class="external-link">get()</a></code> calls. For example:</p>
 <ul>
-<li>If multiple R processes have <code>cache_disk</code>s that share the same directory, one process could remove an object from the cache in between the <code><a href="https://rdrr.io/r/base/exists.html">exists()</a></code> and <code><a href="https://rdrr.io/r/base/get.html">get()</a></code> calls in another process, resulting in an error.</li>
-<li>If you use a <code>cache_mem</code> with a <code>max_age</code>, it’s possible for an object to be present when you call <code><a href="https://rdrr.io/r/base/exists.html">exists()</a></code>, but for its age to exceed <code>max_age</code> by the time <code><a href="https://rdrr.io/r/base/get.html">get()</a></code> is called. In that case, the <code><a href="https://rdrr.io/r/base/get.html">get()</a></code> will return a <code><a href="https://r-lib.github.io/fastmap/reference/key_missing.html">key_missing()</a></code> object.</li>
+<li>If multiple R processes have <code>cache_disk</code>s that share the same directory, one process could remove an object from the cache in between the <code><a href="https://rdrr.io/r/base/exists.html" class="external-link">exists()</a></code> and <code><a href="https://rdrr.io/r/base/get.html" class="external-link">get()</a></code> calls in another process, resulting in an error.</li>
+<li>If you use a <code>cache_mem</code> with a <code>max_age</code>, it’s possible for an object to be present when you call <code><a href="https://rdrr.io/r/base/exists.html" class="external-link">exists()</a></code>, but for its age to exceed <code>max_age</code> by the time <code><a href="https://rdrr.io/r/base/get.html" class="external-link">get()</a></code> is called. In that case, the <code><a href="https://rdrr.io/r/base/get.html" class="external-link">get()</a></code> will return a <code><a href="https://r-lib.github.io/fastmap/reference/key_missing.html" class="external-link">key_missing()</a></code> object.</li>
 </ul>
-<!-- end list --><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co"># Avoid this pattern, due to a potential race condition!</span>
-<span class="kw">if</span> <span class="op">(</span><span class="va">m</span><span class="op">$</span><span class="fu">exists</span><span class="op">(</span><span class="va">key</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span>
-  <span class="va">value</span> <span class="op">&lt;-</span> <span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="va">key</span><span class="op">)</span>
-<span class="op">}</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Avoid this pattern, due to a potential race condition!</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="va">m</span><span class="op">$</span><span class="fu">exists</span><span class="op">(</span><span class="va">key</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">value</span> <span class="op">&lt;-</span> <span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="va">key</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
 </div>
-<div id="cache-types" class="section level2">
-<h2 class="hasAnchor">
-<a href="#cache-types" class="anchor"></a>Cache types</h2>
+<div class="section level2">
+<h2 id="cache-types">Cache types<a class="anchor" aria-label="anchor" href="#cache-types"></a>
+</h2>
 <p><strong>cachem</strong> comes with two kinds of cache objects: a memory cache, and a disk cache.</p>
-<div id="cache_mem" class="section level3">
-<h3 class="hasAnchor">
-<a href="#cache_mem" class="anchor"></a><code>cache_mem()</code>
+<div class="section level3">
+<h3 id="cache_mem">
+<code>cache_mem()</code><a class="anchor" aria-label="anchor" href="#cache_mem"></a>
 </h3>
 <p>The memory cache stores stores objects in memory, by simply keeping a reference to each object. To create a memory cache:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cache_mem.html">cache_mem</a></span><span class="op">(</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cache_mem.html">cache_mem</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>The default size of the cache is 200MB, but this can be customized with <code>max_size</code>:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cache_mem.html">cache_mem</a></span><span class="op">(</span>max_size <span class="op">=</span> <span class="fl">10</span> <span class="op">*</span> <span class="fl">1024</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cache_mem.html">cache_mem</a></span><span class="op">(</span>max_size <span class="op">=</span> <span class="fl">10</span> <span class="op">*</span> <span class="fl">1024</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span></code></pre></div>
 <p>It may also be useful to set a maximum age of objects. For example, if you only want objects to stay for a maximum of one hour:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cache_mem.html">cache_mem</a></span><span class="op">(</span>max_size <span class="op">=</span> <span class="fl">10</span> <span class="op">*</span> <span class="fl">1024</span><span class="op">^</span><span class="fl">2</span>, max_age <span class="op">=</span> <span class="fl">3600</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cache_mem.html">cache_mem</a></span><span class="op">(</span>max_size <span class="op">=</span> <span class="fl">10</span> <span class="op">*</span> <span class="fl">1024</span><span class="op">^</span><span class="fl">2</span>, max_age <span class="op">=</span> <span class="fl">3600</span><span class="op">)</span></span></code></pre></div>
 <p>For more about how objects are evicted from the cache, see section <a href="#pruning">Pruning</a> below.</p>
-<p>An advantage that the memory cache has over the disk cache (and any other type of cache that stores the objects outside of the R process’s memory), is that it does not need to serialize objects. Instead, it merely stores references to the objects. This means that it can store objects that other caches cannot, and with more efficient use of memory – if two objects in the cache share some of their contents (such that they refer to the same sub-object in memory), then <code>cache_mem</code> will not create duplicate copies of the contents, as <code>cache_disk</code> would, since it serializes the objects with the <code><a href="https://rdrr.io/r/base/serialize.html">serialize()</a></code> function.</p>
-<p>Compared to the memory usage, the size <em>calculation</em> is not as intelligent: if there are two objects that share contents, their sizes are computed separately, even if they have items that share the exact same represention in memory. This is done with the <code><a href="https://rdrr.io/r/utils/object.size.html">object.size()</a></code> function, which does not account for multiple references to the same object in memory.</p>
+<p>An advantage that the memory cache has over the disk cache (and any other type of cache that stores the objects outside of the R process’s memory), is that it does not need to serialize objects. Instead, it merely stores references to the objects. This means that it can store objects that other caches cannot, and with more efficient use of memory – if two objects in the cache share some of their contents (such that they refer to the same sub-object in memory), then <code>cache_mem</code> will not create duplicate copies of the contents, as <code>cache_disk</code> would, since it serializes the objects with the <code><a href="https://rdrr.io/r/base/serialize.html" class="external-link">serialize()</a></code> function.</p>
+<p>Compared to the memory usage, the size <em>calculation</em> is not as intelligent: if there are two objects that share contents, their sizes are computed separately, even if they have items that share the exact same represention in memory. This is done with the <code><a href="https://rdrr.io/r/utils/object.size.html" class="external-link">object.size()</a></code> function, which does not account for multiple references to the same object in memory.</p>
 <p>In short, a memory cache, if anything, over-counts the amount of memory actually consumed. In practice, this means that if you set a 200MB limit to the size of cache, and the cache <em>thinks</em> it has 200MB of contents, the actual amount of memory consumed could be less than 200MB.</p>
-<details><p><summary>Demonstration of memory over-counting from <code>object.size()</code></summary></p>
+<details><p><summary> Demonstration of memory over-counting from <code>object.size()</code> </summary></p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co"># Create a and b which both contain the same numeric vector.</span>
-<span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">1e5</span><span class="op">)</span><span class="op">)</span>
-<span class="va">a</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">x</span><span class="op">)</span>
-<span class="va">b</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="fl">2</span>, <span class="va">x</span><span class="op">)</span>
-
-<span class="co"># Add to cache</span>
-<span class="va">m</span><span class="op">$</span><span class="fu">set</span><span class="op">(</span><span class="st">"a"</span>, <span class="va">a</span><span class="op">)</span>
-<span class="va">m</span><span class="op">$</span><span class="fu">set</span><span class="op">(</span><span class="st">"b"</span>, <span class="va">b</span><span class="op">)</span>
-
-<span class="co"># Each object is about 800kB in memory, so the cache_mem() will consider the</span>
-<span class="co"># total memory used to be 1600kB.</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/object.size.html">object.size</a></span><span class="op">(</span><span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"a"</span><span class="op">)</span><span class="op">)</span>
-<span class="co">#&gt; 800224 bytes</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/object.size.html">object.size</a></span><span class="op">(</span><span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"b"</span><span class="op">)</span><span class="op">)</span>
-<span class="co">#&gt; 800224 bytes</span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># Create a and b which both contain the same numeric vector.</span></span>
+<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">1e5</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">a</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">x</span><span class="op">)</span></span>
+<span><span class="va">b</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fl">2</span>, <span class="va">x</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Add to cache</span></span>
+<span><span class="va">m</span><span class="op">$</span><span class="fu">set</span><span class="op">(</span><span class="st">"a"</span>, <span class="va">a</span><span class="op">)</span></span>
+<span><span class="va">m</span><span class="op">$</span><span class="fu">set</span><span class="op">(</span><span class="st">"b"</span>, <span class="va">b</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Each object is about 800kB in memory, so the cache_mem() will consider the</span></span>
+<span><span class="co"># total memory used to be 1600kB.</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/object.size.html" class="external-link">object.size</a></span><span class="op">(</span><span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"a"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; 800224 bytes</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/object.size.html" class="external-link">object.size</a></span><span class="op">(</span><span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"b"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; 800224 bytes</span></span></code></pre></div>
 <p>For reference, lobstr::obj_size can detect shared objects, and knows that these objects share most of their memory.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu">lobstr</span><span class="fu">::</span><span class="fu">obj_size</span><span class="op">(</span><span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"a"</span><span class="op">)</span><span class="op">)</span>
-<span class="co">#&gt; 800,224 B</span>
-<span class="fu">lobstr</span><span class="fu">::</span><span class="fu">obj_size</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"a"</span><span class="op">)</span>, <span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"b"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
-<span class="co">#&gt; 800,408 B</span></code></pre></div>
-<p>However, lobstr is not on CRAN, and if obj_size() were used to find the incremental memory used when an object was added to the cache, it would have to walk all objects in the cache every time a single object is added. For these reasons, cache_mem uses <code><a href="https://rdrr.io/r/utils/object.size.html">object.size()</a></code> to compute the object sizes.</p>
-</details>
+<code class="sourceCode R"><span><span class="fu">lobstr</span><span class="fu">::</span><span class="fu">obj_size</span><span class="op">(</span><span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"a"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; 800,224 B</span></span>
+<span><span class="fu">lobstr</span><span class="fu">::</span><span class="fu">obj_size</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"a"</span><span class="op">)</span>, <span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"b"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; 800,408 B</span></span></code></pre></div>
+<p>However, lobstr is not on CRAN, and if obj_size() were used to find the incremental memory used when an object was added to the cache, it would have to walk all objects in the cache every time a single object is added. For these reasons, cache_mem uses <code><a href="https://rdrr.io/r/utils/object.size.html" class="external-link">object.size()</a></code> to compute the object sizes.</p></details>
 </div>
-<div id="cache_disk" class="section level3">
-<h3 class="hasAnchor">
-<a href="#cache_disk" class="anchor"></a><code>cache_disk()</code>
+<div class="section level3">
+<h3 id="cache_disk">
+<code>cache_disk()</code><a class="anchor" aria-label="anchor" href="#cache_disk"></a>
 </h3>
 <p>Disk caches are stored in a directory on disk. A disk cache is slower than a memory cache, but can generally be larger. To create one:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cache_disk.html">cache_disk</a></span><span class="op">(</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cache_disk.html">cache_disk</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>By default, it creates a subdirectory of the R process’s temp directory, and it will persist until the R process exits.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">d</span><span class="op">$</span><span class="fu">info</span><span class="op">(</span><span class="op">)</span><span class="op">$</span><span class="va">dir</span>
-<span class="co">#&gt;  "/tmp/Rtmp6h5iB3/cache_disk-d1901b2b615a"</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">d</span><span class="op">$</span><span class="fu">info</span><span class="op">(</span><span class="op">)</span><span class="op">$</span><span class="va">dir</span></span>
+<span><span class="co">#&gt;  "/tmp/Rtmp6h5iB3/cache_disk-d1901b2b615a"</span></span></code></pre></div>
 <p>Like a <code>cache_mem</code>, the <code>max_size</code>, <code>max_n</code>, <code>max_age</code> can be customized. See section <a href="#pruning">Pruning</a> below for more information.</p>
-<p>Each object in the cache is stored as an RDS file on disk, using the <code><a href="https://rdrr.io/r/base/serialize.html">serialize()</a></code> function.</p>
+<p>Each object in the cache is stored as an RDS file on disk, using the <code><a href="https://rdrr.io/r/base/serialize.html" class="external-link">serialize()</a></code> function.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">d</span><span class="op">$</span><span class="fu">set</span><span class="op">(</span><span class="st">"abc"</span>, <span class="fl">100</span><span class="op">)</span>
-<span class="va">d</span><span class="op">$</span><span class="fu">set</span><span class="op">(</span><span class="st">"x01"</span>, <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span>
-
-<span class="fu"><a href="https://rdrr.io/r/base/list.files.html">dir</a></span><span class="op">(</span><span class="va">d</span><span class="op">$</span><span class="fu">info</span><span class="op">(</span><span class="op">)</span><span class="op">$</span><span class="va">dir</span><span class="op">)</span>
-<span class="co">#&gt; [1] "abc.rds" "x01.rds"</span></code></pre></div>
-<p>Since objects in a disk cache are serialized, they are subject to the limitations of the <code><a href="https://rdrr.io/r/base/serialize.html">serialize()</a></code> function. For more information, see section <a href="#limitations-of-serialized-objects">Limitations of serialized objects</a>.</p>
+<code class="sourceCode R"><span><span class="va">d</span><span class="op">$</span><span class="fu">set</span><span class="op">(</span><span class="st">"abc"</span>, <span class="fl">100</span><span class="op">)</span></span>
+<span><span class="va">d</span><span class="op">$</span><span class="fu">set</span><span class="op">(</span><span class="st">"x01"</span>, <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">dir</a></span><span class="op">(</span><span class="va">d</span><span class="op">$</span><span class="fu">info</span><span class="op">(</span><span class="op">)</span><span class="op">$</span><span class="va">dir</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "abc.rds" "x01.rds"</span></span></code></pre></div>
+<p>Since objects in a disk cache are serialized, they are subject to the limitations of the <code><a href="https://rdrr.io/r/base/serialize.html" class="external-link">serialize()</a></code> function. For more information, see section <a href="#limitations-of-serialized-objects">Limitations of serialized objects</a>.</p>
 <p>The storage directory can be specified with <code>dir</code>; it will be created if necessary.</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="reference/cache_disk.html">cache_disk</a></span><span class="op">(</span>dir <span class="op">=</span> <span class="st">"cachedir"</span><span class="op">)</span></code></pre></div>
-<div id="sharing-a-disk-cache-among-processes" class="section level4">
-<h4 class="hasAnchor">
-<a href="#sharing-a-disk-cache-among-processes" class="anchor"></a>Sharing a disk cache among processes</h4>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/cache_disk.html">cache_disk</a></span><span class="op">(</span>dir <span class="op">=</span> <span class="st">"cachedir"</span><span class="op">)</span></span></code></pre></div>
+<div class="section level4">
+<h4 id="sharing-a-disk-cache-among-processes">Sharing a disk cache among processes<a class="anchor" aria-label="anchor" href="#sharing-a-disk-cache-among-processes"></a>
+</h4>
 <p>Multiple R processes can use <code>disk_cache</code> objects that share the same cache directory. To do this, simply point each <code>cache_disk</code> to the same directory.</p>
 </div>
-<div id="disk_cache-pruning" class="section level4">
-<h4 class="hasAnchor">
-<a href="#disk_cache-pruning" class="anchor"></a><code>disk_cache</code> pruning</h4>
+<div class="section level4">
+<h4 id="disk_cache-pruning">
+<code>disk_cache</code> pruning<a class="anchor" aria-label="anchor" href="#disk_cache-pruning"></a>
+</h4>
 <p>For a <code>disk_cache</code>, pruning does not happen on every access, because finding the size of files in the cache directory can take a nontrivial amount of time. By default, pruning happens once every 20 times that <code>$set()</code> is called, or if at least five seconds have elapsed since the last pruning. The <code>prune_rate</code> controls how many times <code>$set()</code> must be called before a pruning occurs. It defaults to 20; smaller values result in more frequent pruning and larger values result in less frequent pruning (but keep in mind pruning always occurs if it has been at least five seconds since the last pruning).</p>
 </div>
-<div id="cleaning-up-the-cache-directory" class="section level4">
-<h4 class="hasAnchor">
-<a href="#cleaning-up-the-cache-directory" class="anchor"></a>Cleaning up the cache directory</h4>
+<div class="section level4">
+<h4 id="cleaning-up-the-cache-directory">Cleaning up the cache directory<a class="anchor" aria-label="anchor" href="#cleaning-up-the-cache-directory"></a>
+</h4>
 <p>The cache directory can be deleted by calling <code>$destroy()</code>. After it is destroyed, the cache object can no longer be used.</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">d</span><span class="op">$</span><span class="fu">destroy</span><span class="op">(</span><span class="op">)</span>
-<span class="va">d</span><span class="op">$</span><span class="fu">set</span><span class="op">(</span><span class="st">"a"</span>, <span class="fl">1</span><span class="op">)</span>  <span class="co"># Error</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">d</span><span class="op">$</span><span class="fu">destroy</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">d</span><span class="op">$</span><span class="fu">set</span><span class="op">(</span><span class="st">"a"</span>, <span class="fl">1</span><span class="op">)</span>  <span class="co"># Error</span></span></code></pre></div>
 <p>To create a <code>cache_disk</code> that will automatically delete its storage directory when garbage collected, use <code>destroy_on_finalize=TRUE</code>:</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cache_disk.html">cache_disk</a></span><span class="op">(</span>destroy_on_finalize <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>
-<span class="va">d</span><span class="op">$</span><span class="fu">set</span><span class="op">(</span><span class="st">"a"</span>, <span class="fl">1</span><span class="op">)</span>
-
-<span class="va">cachedir</span> <span class="op">&lt;-</span> <span class="va">d</span><span class="op">$</span><span class="fu">info</span><span class="op">(</span><span class="op">)</span><span class="op">$</span><span class="va">dir</span>
-<span class="fu"><a href="https://rdrr.io/r/base/list.files.html">dir</a></span><span class="op">(</span><span class="va">cachedir</span><span class="op">)</span>
-<span class="co">#&gt; [1] "a.rds"</span>
-
-<span class="co"># Remove reference to d and trigger a garbage collection</span>
-<span class="fu"><a href="https://rdrr.io/r/base/rm.html">rm</a></span><span class="op">(</span><span class="va">d</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/base/gc.html">gc</a></span><span class="op">(</span><span class="op">)</span>
-
-<span class="fu"><a href="https://rdrr.io/r/base/files2.html">dir.exists</a></span><span class="op">(</span><span class="va">cachedir</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cache_disk.html">cache_disk</a></span><span class="op">(</span>destroy_on_finalize <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">d</span><span class="op">$</span><span class="fu">set</span><span class="op">(</span><span class="st">"a"</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">cachedir</span> <span class="op">&lt;-</span> <span class="va">d</span><span class="op">$</span><span class="fu">info</span><span class="op">(</span><span class="op">)</span><span class="op">$</span><span class="va">dir</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">dir</a></span><span class="op">(</span><span class="va">cachedir</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "a.rds"</span></span>
+<span></span>
+<span><span class="co"># Remove reference to d and trigger a garbage collection</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">d</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/gc.html" class="external-link">gc</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.exists</a></span><span class="op">(</span><span class="va">cachedir</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="using-custom-serialization-functions">Using custom serialization functions<a class="anchor" aria-label="anchor" href="#using-custom-serialization-functions"></a>
+</h4>
+<p>It is possible to use custom serialization functions rather than the default of <code>writeRDS()</code> and <code><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS()</a></code> with the <code>write_fn</code>, <code>read_fn</code> and <code>extension</code> arguments respectively. This could be used to use alternative serialization formats like <a href="https://github.com/traversc/qs" class="external-link">qs</a>, or specialized object formats <a href="http://www.fstpackage.org/fst/" class="external-link">fst</a> or parquet.</p>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/traversc/qs" class="external-link">qs</a></span><span class="op">)</span></span>
+<span><span class="co">#&gt; qs v0.25.3.</span></span>
+<span></span>
+<span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cache_disk.html">cache_disk</a></span><span class="op">(</span>read_fn <span class="op">=</span> <span class="fu">qs</span><span class="fu">::</span><span class="va">qread</span>, write_fn <span class="op">=</span> <span class="fu">qs</span><span class="fu">::</span><span class="va">qsave</span>, extension <span class="op">=</span> <span class="st">".qs"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">d</span><span class="op">$</span><span class="fu">set</span><span class="op">(</span><span class="st">"a"</span>, <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">cachedir</span> <span class="op">&lt;-</span> <span class="va">d</span><span class="op">$</span><span class="fu">info</span><span class="op">(</span><span class="op">)</span><span class="op">$</span><span class="va">dir</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">dir</a></span><span class="op">(</span><span class="va">cachedir</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "a.qs"</span></span>
+<span><span class="va">d</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"a"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [[1]]</span></span>
+<span><span class="co">#&gt; [1] 1</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; [[2]]</span></span>
+<span><span class="co">#&gt; [1] 2</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; [[3]]</span></span>
+<span><span class="co">#&gt; [1] 3</span></span></code></pre></div>
 </div>
 </div>
 </div>
-<div id="cache-api" class="section level2">
-<h2 class="hasAnchor">
-<a href="#cache-api" class="anchor"></a>Cache API</h2>
-<p><code><a href="reference/cache_mem.html">cache_mem()</a></code> and <code><a href="reference/cache_disk.html">cache_disk()</a></code> support all of the methods listed below. If you want to create a compatible caching object, it must have at least the <code><a href="https://rdrr.io/r/base/get.html">get()</a></code> and <code>set()</code> methods:</p>
+<div class="section level2">
+<h2 id="cache-api">Cache API<a class="anchor" aria-label="anchor" href="#cache-api"></a>
+</h2>
+<p><code><a href="reference/cache_mem.html">cache_mem()</a></code> and <code><a href="reference/cache_disk.html">cache_disk()</a></code> support all of the methods listed below. If you want to create a compatible caching object, it must have at least the <code><a href="https://rdrr.io/r/base/get.html" class="external-link">get()</a></code> and <code>set()</code> methods:</p>
 <ul>
 <li>
 <code>get(key, missing = missing_)</code>: Get the object associated with <code>key</code>. The <code>missing</code> parameter allows customized behavior if the key is not present: it actually is an expression which is evaluated when there is a cache miss, and it could return a value or throw an error.</li>
@@ -300,39 +310,39 @@
 <li>
 <code>value</code>: can be any R object, with some exceptions noted below.</li>
 </ul>
-<div id="limitations-of-serialized-objects" class="section level4">
-<h4 class="hasAnchor">
-<a href="#limitations-of-serialized-objects" class="anchor"></a>Limitations of serialized objects</h4>
-<p>For any cache that serializes the object for storage outside of the R process – in other words, any cache other than a <code><a href="reference/cache_mem.html">cache_mem()</a></code> – some types of objects will not save and restore as well. Notably, reference objects may consume more memory when restored, since R may not know to deduplicate shared objects. External pointers are not be able to be serialized, since they point to memory in the R process. See <code><a href="https://rdrr.io/r/base/serialize.html">?serialize</a></code> for more information.</p>
+<div class="section level4">
+<h4 id="limitations-of-serialized-objects">Limitations of serialized objects<a class="anchor" aria-label="anchor" href="#limitations-of-serialized-objects"></a>
+</h4>
+<p>For any cache that serializes the object for storage outside of the R process – in other words, any cache other than a <code><a href="reference/cache_mem.html">cache_mem()</a></code> – some types of objects will not save and restore as well. Notably, reference objects may consume more memory when restored, since R may not know to deduplicate shared objects. External pointers are not be able to be serialized, since they point to memory in the R process. See <code><a href="https://rdrr.io/r/base/serialize.html" class="external-link">?serialize</a></code> for more information.</p>
 </div>
-<div id="read-only-caches" class="section level4">
-<h4 class="hasAnchor">
-<a href="#read-only-caches" class="anchor"></a>Read-only caches</h4>
-<p>It is possible to create a read-only cache by making the <code>set()</code>, <code><a href="https://rdrr.io/r/base/rm.html">remove()</a></code>, <code>reset()</code>, and <code>prune()</code> methods into no-ops. This can be useful if sharing a cache with another R process which can write to the cache. For example, one (or more) processes can write to the cache, and other processes can read from it.</p>
+<div class="section level4">
+<h4 id="read-only-caches">Read-only caches<a class="anchor" aria-label="anchor" href="#read-only-caches"></a>
+</h4>
+<p>It is possible to create a read-only cache by making the <code>set()</code>, <code><a href="https://rdrr.io/r/base/rm.html" class="external-link">remove()</a></code>, <code>reset()</code>, and <code>prune()</code> methods into no-ops. This can be useful if sharing a cache with another R process which can write to the cache. For example, one (or more) processes can write to the cache, and other processes can read from it.</p>
 <p>This function will wrap a cache object in a read-only wrapper. Note, however, that code that uses such a cache must not require that <code>$set()</code> actually sets a value in the cache. This is good practice anyway, because with these cache objects, items can be pruned from them at any time.</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">cache_readonly_wrap</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">cache</span><span class="op">)</span> <span class="op">{</span>
-  <span class="fu"><a href="https://rdrr.io/r/base/structure.html">structure</a></span><span class="op">(</span>
-    <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>
-      get <span class="op">=</span> <span class="va">cache</span><span class="op">$</span><span class="va">get</span>,
-      set <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">key</span>, <span class="va">value</span><span class="op">)</span> <span class="cn">NULL</span>,
-      exists <span class="op">=</span> <span class="va">cache</span><span class="op">$</span><span class="va">exists</span>,
-      keys <span class="op">=</span> <span class="va">cache</span><span class="op">$</span><span class="va">keys</span>,
-      remove <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">key</span><span class="op">)</span> <span class="cn">NULL</span>,
-      reset <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="cn">NULL</span>,
-      prune <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="cn">NULL</span>,
-      size <span class="op">=</span> <span class="va">cache</span><span class="op">$</span><span class="va">size</span>
-    <span class="op">)</span>,
-    class <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"cache_readonly"</span>, <span class="fu"><a href="https://rdrr.io/r/base/class.html">class</a></span><span class="op">(</span><span class="va">cache</span><span class="op">)</span><span class="op">)</span>
-  <span class="op">)</span>
-<span class="op">}</span>
-
-<span class="va">mr</span> <span class="op">&lt;-</span> <span class="fu">cache_readonly_wrap</span><span class="op">(</span><span class="va">m</span><span class="op">)</span></code></pre></div>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">cache_readonly_wrap</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">cache</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/structure.html" class="external-link">structure</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>      get <span class="op">=</span> <span class="va">cache</span><span class="op">$</span><span class="va">get</span>,</span>
+<span>      set <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">key</span>, <span class="va">value</span><span class="op">)</span> <span class="cn">NULL</span>,</span>
+<span>      exists <span class="op">=</span> <span class="va">cache</span><span class="op">$</span><span class="va">exists</span>,</span>
+<span>      keys <span class="op">=</span> <span class="va">cache</span><span class="op">$</span><span class="va">keys</span>,</span>
+<span>      remove <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">key</span><span class="op">)</span> <span class="cn">NULL</span>,</span>
+<span>      reset <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="cn">NULL</span>,</span>
+<span>      prune <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="cn">NULL</span>,</span>
+<span>      size <span class="op">=</span> <span class="va">cache</span><span class="op">$</span><span class="va">size</span></span>
+<span>    <span class="op">)</span>,</span>
+<span>    class <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cache_readonly"</span>, <span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">cache</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">mr</span> <span class="op">&lt;-</span> <span class="fu">cache_readonly_wrap</span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
-<div id="pruning" class="section level2">
-<h2 class="hasAnchor">
-<a href="#pruning" class="anchor"></a>Pruning</h2>
+<div class="section level2">
+<h2 id="pruning">Pruning<a class="anchor" aria-label="anchor" href="#pruning"></a>
+</h2>
 <p>The cache objects provided by cachem have automatic pruning. (Note that pruning is not required by the API, so one could implement an API-compatible cache without pruning.)</p>
 <p>This section describes how pruning works for <code><a href="reference/cache_mem.html">cache_mem()</a></code> and <code><a href="reference/cache_disk.html">cache_disk()</a></code>.</p>
 <p>When the cache object is created, the maximum size (in bytes) is specified by <code>max_size</code>. When the size of objects in the cache exceeds <code>max_size</code>, objects will be pruned from the cache.</p>
@@ -346,53 +356,53 @@
 <p>It is also possible to set the maximum number of items that can be in the cache, with <code>max_n</code>. By default this is set to <code>Inf</code>, or no limit.</p>
 <p>The <code>max_age</code> parameter is somewhat different from <code>max_size</code> and <code>max_n</code>. The latter two set limits on the cache store as a whole, whereas <code>max_age</code> sets limits for each individual item; for each item, if its age exceeds <code>max_age</code>, then it will be removed from the cache.</p>
 </div>
-<div id="layered-caches" class="section level2">
-<h2 class="hasAnchor">
-<a href="#layered-caches" class="anchor"></a>Layered caches</h2>
+<div class="section level2">
+<h2 id="layered-caches">Layered caches<a class="anchor" aria-label="anchor" href="#layered-caches"></a>
+</h2>
 <p>Multiple caches can be composed into a single cache, using <code><a href="reference/cache_layered.html">cache_layered()</a></code>. This can be used to create a multi-level cache. (Note thate <code><a href="reference/cache_layered.html">cache_layered()</a></code> is currently experimental.) For example, we can create a layered cache with a very fast 100MB memory cache and a larger but slower 2GB disk cache:</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cache_mem.html">cache_mem</a></span><span class="op">(</span>max_size <span class="op">=</span> <span class="fl">100</span> <span class="op">*</span> <span class="fl">1024</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span>
-<span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cache_disk.html">cache_disk</a></span><span class="op">(</span>max_size <span class="op">=</span> <span class="fl">2</span> <span class="op">*</span> <span class="fl">1024</span><span class="op">^</span><span class="fl">3</span><span class="op">)</span>
-
-<span class="va">cl</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cache_layered.html">cache_layered</a></span><span class="op">(</span><span class="va">m</span>, <span class="va">d</span><span class="op">)</span></code></pre></div>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cache_mem.html">cache_mem</a></span><span class="op">(</span>max_size <span class="op">=</span> <span class="fl">100</span> <span class="op">*</span> <span class="fl">1024</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span>
+<span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cache_disk.html">cache_disk</a></span><span class="op">(</span>max_size <span class="op">=</span> <span class="fl">2</span> <span class="op">*</span> <span class="fl">1024</span><span class="op">^</span><span class="fl">3</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">cl</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cache_layered.html">cache_layered</a></span><span class="op">(</span><span class="va">m</span>, <span class="va">d</span><span class="op">)</span></span></code></pre></div>
 <p>The layered cache will have the same API, with <code>$get()</code>, <code>$set()</code>, and so on, so it can be used interchangeably with other caching objects.</p>
 <p>For this example, we’ll recreate the <code>cache_layered</code> with logging enabled, so that it will show cache hits and misses.</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">cl</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cache_layered.html">cache_layered</a></span><span class="op">(</span><span class="va">m</span>, <span class="va">d</span>, logfile <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/showConnections.html">stderr</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>
-
-<span class="co"># Each of the objects generated by rnorm() is about 40 MB</span>
-<span class="va">cl</span><span class="op">$</span><span class="fu">set</span><span class="op">(</span><span class="st">"a"</span>, <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">5e6</span><span class="op">)</span><span class="op">)</span>
-<span class="va">cl</span><span class="op">$</span><span class="fu">set</span><span class="op">(</span><span class="st">"b"</span>, <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">5e6</span><span class="op">)</span><span class="op">)</span>
-<span class="va">cl</span><span class="op">$</span><span class="fu">set</span><span class="op">(</span><span class="st">"c"</span>, <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">5e6</span><span class="op">)</span><span class="op">)</span>
-
-<span class="co"># View the objects in each of the component caches</span>
-<span class="va">m</span><span class="op">$</span><span class="fu">keys</span><span class="op">(</span><span class="op">)</span>
-<span class="co">#&gt; [1] "c" "b"</span>
-<span class="va">d</span><span class="op">$</span><span class="fu">keys</span><span class="op">(</span><span class="op">)</span>
-<span class="co">#&gt; [1] "a" "b" "c"</span>
-
-<span class="co"># The layered cache reports having all keys</span>
-<span class="va">lc</span><span class="op">$</span><span class="fu">keys</span><span class="op">(</span><span class="op">)</span>
-<span class="co">#&gt; [1] "c" "b" "a"</span></code></pre></div>
-<p>When <code>$get()</code> is called, it searches the first cache, and if it’s missing there, it searches the next cache, and so on. If not found in any caches, it returns <code><a href="https://r-lib.github.io/fastmap/reference/key_missing.html">key_missing()</a></code>.</p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co"># Get object that exists in the memory cache</span>
-<span class="va">x</span> <span class="op">&lt;-</span> <span class="va">cl</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"c"</span><span class="op">)</span>
-<span class="co">#&gt; [2020-10-23 13:11:09.985] cache_layered Get: c</span>
-<span class="co">#&gt; [2020-10-23 13:11:09.985] cache_layered Get from cache_mem... hit</span>
-
-<span class="co"># Get object that doesn't exist in the memory cache</span>
-<span class="va">x</span> <span class="op">&lt;-</span> <span class="va">cl</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"c"</span><span class="op">)</span>
-<span class="co">#&gt; [2020-10-23 13:13:10.968] cache_layered Get: a</span>
-<span class="co">#&gt; [2020-10-23 13:13:10.969] cache_layered Get from cache_mem... miss</span>
-<span class="co">#&gt; [2020-10-23 13:13:11.329] cache_layered Get from cache_disk... hit</span>
-
-<span class="co"># Object is not present in any component caches</span>
-<span class="va">cl</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"d"</span><span class="op">)</span>
-<span class="co">#&gt; [2020-10-23 13:13:40.197] cache_layered Get: d</span>
-<span class="co">#&gt; [2020-10-23 13:13:40.197] cache_layered Get from cache_mem... miss</span>
-<span class="co">#&gt; [2020-10-23 13:13:40.198] cache_layered Get from cache_disk... miss</span>
-<span class="co">#&gt; &lt;Key Missing&gt;</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">cl</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cache_layered.html">cache_layered</a></span><span class="op">(</span><span class="va">m</span>, <span class="va">d</span>, logfile <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/showConnections.html" class="external-link">stderr</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Each of the objects generated by rnorm() is about 40 MB</span></span>
+<span><span class="va">cl</span><span class="op">$</span><span class="fu">set</span><span class="op">(</span><span class="st">"a"</span>, <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">5e6</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">cl</span><span class="op">$</span><span class="fu">set</span><span class="op">(</span><span class="st">"b"</span>, <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">5e6</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">cl</span><span class="op">$</span><span class="fu">set</span><span class="op">(</span><span class="st">"c"</span>, <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">5e6</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># View the objects in each of the component caches</span></span>
+<span><span class="va">m</span><span class="op">$</span><span class="fu">keys</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "c" "b"</span></span>
+<span><span class="va">d</span><span class="op">$</span><span class="fu">keys</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "a" "b" "c"</span></span>
+<span></span>
+<span><span class="co"># The layered cache reports having all keys</span></span>
+<span><span class="va">cl</span><span class="op">$</span><span class="fu">keys</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "c" "b" "a"</span></span></code></pre></div>
+<p>When <code>$get()</code> is called, it searches the first cache, and if it’s missing there, it searches the next cache, and so on. If not found in any caches, it returns <code><a href="https://r-lib.github.io/fastmap/reference/key_missing.html" class="external-link">key_missing()</a></code>.</p>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Get object that exists in the memory cache</span></span>
+<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="va">cl</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"c"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [2020-10-23 13:11:09.985] cache_layered Get: c</span></span>
+<span><span class="co">#&gt; [2020-10-23 13:11:09.985] cache_layered Get from cache_mem... hit</span></span>
+<span></span>
+<span><span class="co"># Get object that doesn't exist in the memory cache</span></span>
+<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="va">cl</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"a"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [2020-10-23 13:13:10.968] cache_layered Get: a</span></span>
+<span><span class="co">#&gt; [2020-10-23 13:13:10.969] cache_layered Get from cache_mem... miss</span></span>
+<span><span class="co">#&gt; [2020-10-23 13:13:11.329] cache_layered Get from cache_disk... hit</span></span>
+<span></span>
+<span><span class="co"># Object is not present in any component caches</span></span>
+<span><span class="va">cl</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"d"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [2020-10-23 13:13:40.197] cache_layered Get: d</span></span>
+<span><span class="co">#&gt; [2020-10-23 13:13:40.197] cache_layered Get from cache_mem... miss</span></span>
+<span><span class="co">#&gt; [2020-10-23 13:13:40.198] cache_layered Get from cache_disk... miss</span></span>
+<span><span class="co">#&gt; &lt;Key Missing&gt;</span></span></code></pre></div>
 <p>Multiple cache objects can be layered this way. You could even add a cache which uses a remote store, such as a network file system or even AWS S3.</p>
 </div>
 </div>
@@ -401,45 +411,56 @@
 
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <div class="links">
-<h2>Links</h2>
+<h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">
-<li>Download from CRAN at <br><a href="https://cloud.r-project.org/package=cachem">https://​cloud.r-project.org/​package=cachem</a>
-</li>
-<li>Browse source code at <br><a href="https://github.com/r-lib/cachem/">https://​github.com/​r-lib/​cachem/​</a>
-</li>
+<li><a href="https://cloud.r-project.org/package=cachem" class="external-link">View on CRAN</a></li>
+<li><a href="https://github.com/r-lib/cachem/" class="external-link">Browse source code</a></li>
 </ul>
 </div>
+
 <div class="license">
-<h2>License</h2>
+<h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
 <li><a href="LICENSE.html">Full license</a></li>
-<li><small><a href="https://opensource.org/licenses/mit-license.php">MIT</a> + file <a href="LICENSE-text.html">LICENSE</a></small></li>
+<li><small><a href="https://opensource.org/licenses/mit-license.php" class="external-link">MIT</a> + file <a href="LICENSE-text.html">LICENSE</a></small></li>
 </ul>
 </div>
+
+
+<div class="citation">
+<h2 data-toc-skip>Citation</h2>
+<ul class="list-unstyled">
+<li><a href="authors.html#citation">Citing cachem</a></li>
+</ul>
+</div>
+
 <div class="developers">
-<h2>Developers</h2>
+<h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
 <li>Winston Chang <br><small class="roles"> Author, maintainer </small>  </li>
 <li> RStudio <br><small class="roles"> Copyright holder, funder </small>  </li>
 </ul>
 </div>
 
-  <div class="dev-status">
-<h2>Dev status</h2>
+<div class="dev-status">
+<h2 data-toc-skip>Dev status</h2>
 <ul class="list-unstyled">
-<li><a href="https://github.com/r-lib/cachem/actions"><img src="https://github.com/r-lib/cachem/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R build status"></a></li>
+<li><a href="https://github.com/r-lib/cachem/actions" class="external-link"><img src="https://github.com/r-lib/cachem/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R build status"></a></li>
 </ul>
 </div>
-</div>
+
+  </div>
 </div>
 
 
       <footer><div class="copyright">
-  <p>Developed by Winston Chang,  RStudio.</p>
+  <p></p>
+<p>Developed by Winston Chang, RStudio.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
+  <p></p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer>
@@ -447,6 +468,8 @@
 
   
 
+
+  
 
   </body>
 </html>
