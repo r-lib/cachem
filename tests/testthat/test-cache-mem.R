@@ -44,6 +44,19 @@ test_that("cache_mem: handling missing values", {
   expect_error(d$get("y"), "^Missing key$") # Make sure a second time also throws
 })
 
+test_that("cache_mem: reset", {
+  mc <- cache_mem()
+  mc$set("a", "A")
+  mc$set("b", "B")
+  mc$reset()
+  expect_identical(mc$keys(), character())
+  expect_identical(mc$size(), 0L)
+  mc$set("c", "C")
+  expect_identical(mc$keys(), "c")
+  expect_identical(mc$size(), 1L)
+  expect_false(mc$exists("a"))
+  expect_true(mc$exists("c"))
+})
 
 test_that("cache_mem: pruning respects max_n", {
   delay <- 0.001 * time_factor
