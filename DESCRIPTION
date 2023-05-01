@@ -1,5 +1,5 @@
 Package: cachem
-Version: 1.0.7.9000
+Version: 1.0.8
 Title: Cache R Objects with Automatic Pruning
 Description: Key-value stores with automatic pruning. Caches can limit
     either their total size or the age of the oldest object (or both),
