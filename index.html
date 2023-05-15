@@ -188,9 +188,9 @@
 <p>For reference, lobstr::obj_size can detect shared objects, and knows that these objects share most of their memory.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">lobstr</span><span class="fu">::</span><span class="fu">obj_size</span><span class="op">(</span><span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"a"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 800,224 B</span></span>
+<span><span class="co">#&gt; 800.22 kB</span></span>
 <span><span class="fu">lobstr</span><span class="fu">::</span><span class="fu">obj_size</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"a"</span><span class="op">)</span>, <span class="va">m</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"b"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 800,408 B</span></span></code></pre></div>
+<span><span class="co">#&gt; 800.41 kB</span></span></code></pre></div>
 <p>However, lobstr is not on CRAN, and if obj_size() were used to find the incremental memory used when an object was added to the cache, it would have to walk all objects in the cache every time a single object is added. For these reasons, cache_mem uses <code><a href="https://rdrr.io/r/utils/object.size.html" class="external-link">object.size()</a></code> to compute the object sizes.</p></details>
 </div>
 <div class="section level3">
@@ -255,7 +255,6 @@
 <p>It is possible to use custom serialization functions rather than the default of <code>writeRDS()</code> and <code><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS()</a></code> with the <code>write_fn</code>, <code>read_fn</code> and <code>extension</code> arguments respectively. This could be used to use alternative serialization formats like <a href="https://github.com/traversc/qs" class="external-link">qs</a>, or specialized object formats <a href="http://www.fstpackage.org/fst/" class="external-link">fst</a> or parquet.</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/traversc/qs" class="external-link">qs</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; qs v0.25.3.</span></span>
 <span></span>
 <span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cache_disk.html">cache_disk</a></span><span class="op">(</span>read_fn <span class="op">=</span> <span class="fu">qs</span><span class="fu">::</span><span class="va">qread</span>, write_fn <span class="op">=</span> <span class="fu">qs</span><span class="fu">::</span><span class="va">qsave</span>, extension <span class="op">=</span> <span class="st">".qs"</span><span class="op">)</span></span>
 <span></span>
@@ -267,10 +266,10 @@
 <span><span class="va">d</span><span class="op">$</span><span class="fu">get</span><span class="op">(</span><span class="st">"a"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [[1]]</span></span>
 <span><span class="co">#&gt; [1] 1</span></span>
-<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;</span></span>
 <span><span class="co">#&gt; [[2]]</span></span>
 <span><span class="co">#&gt; [1] 2</span></span>
-<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;</span></span>
 <span><span class="co">#&gt; [[3]]</span></span>
 <span><span class="co">#&gt; [1] 3</span></span></code></pre></div>
 </div>
