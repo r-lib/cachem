@@ -240,7 +240,7 @@ dir.exists(cachedir)
 
 It is possible to use custom serialization functions rather than the default of `writeRDS()` and `readRDS()` with the `write_fn`, `read_fn` and `extension` arguments respectively. This could be used to use alternative serialization formats like [qs](https://github.com/traversc/qs), or specialized object formats [fst](http://www.fstpackage.org/fst/) or parquet.
 
-```{r}
+``` r
 library(qs)
 
 d <- cache_disk(read_fn = qs::qread, write_fn = qs::qsave, extension = ".qs")
@@ -249,7 +249,16 @@ d$set("a", list(1, 2, 3))
 
 cachedir <- d$info()$dir
 dir(cachedir)
+#> [1] "a.qs"
 d$get("a")
+#> [[1]]
+#> [1] 1
+#>
+#> [[2]]
+#> [1] 2
+#>
+#> [[3]]
+#> [1] 3
 ```
 
 ## Cache API

@@ -1,13 +1,13 @@
 
--   [cachem](#cachem)
-    -   [Installation](#installation)
-    -   [Usage](#usage)
-    -   [Cache types](#cache-types)
-        -   [`cache_mem()`](#cache_mem)
-        -   [`cache_disk()`](#cache_disk)
-    -   [Cache API](#cache-api)
-    -   [Pruning](#pruning)
-    -   [Layered caches](#layered-caches)
+- [cachem](#cachem)
+  - [Installation](#installation)
+  - [Usage](#usage)
+  - [Cache types](#cache-types)
+    - [`cache_mem()`](#cache_mem)
+    - [`cache_disk()`](#cache_disk)
+  - [Cache API](#cache-api)
+  - [Pruning](#pruning)
+  - [Layered caches](#layered-caches)
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
@@ -27,15 +27,15 @@ so that they won’t have unbounded growth.
 The cache objects in **cachem** differ from some other key-value stores
 in the following ways:
 
--   The cache objects provide automatic pruning so that they remain
-    within memory limits.
--   Fetching a non-existing object returns a sentinel value. An
-    alternative is to simply return `NULL`. This is what R lists and
-    environments do, but it is ambiguous whether the value really is
-    `NULL`, or if it is not present. Another alternative is to throw an
-    exception when fetching a non-existent object. However, this results
-    in more complicated code, as every `get()` needs to be wrapped in a
-    `tryCatch()`.
+- The cache objects provide automatic pruning so that they remain within
+  memory limits.
+- Fetching a non-existing object returns a sentinel value. An
+  alternative is to simply return `NULL`. This is what R lists and
+  environments do, but it is ambiguous whether the value really is
+  `NULL`, or if it is not present. Another alternative is to throw an
+  exception when fetching a non-existent object. However, this results
+  in more complicated code, as every `get()` needs to be wrapped in a
+  `tryCatch()`.
 
 ## Installation
 
@@ -109,14 +109,14 @@ The reason for doing this (instead of calling `$exists(key)` and then
 race condition: the object could be removed from the cache between the
 `exists()` and `get()` calls. For example:
 
--   If multiple R processes have `cache_disk`s that share the same
-    directory, one process could remove an object from the cache in
-    between the `exists()` and `get()` calls in another process,
-    resulting in an error.
--   If you use a `cache_mem` with a `max_age`, it’s possible for an
-    object to be present when you call `exists()`, but for its age to
-    exceed `max_age` by the time `get()` is called. In that case, the
-    `get()` will return a `key_missing()` object.
+- If multiple R processes have `cache_disk`s that share the same
+  directory, one process could remove an object from the cache in
+  between the `exists()` and `get()` calls in another process, resulting
+  in an error.
+- If you use a `cache_mem` with a `max_age`, it’s possible for an object
+  to be present when you call `exists()`, but for its age to exceed
+  `max_age` by the time `get()` is called. In that case, the `get()`
+  will return a `key_missing()` object.
 
 ``` r
 # Avoid this pattern, due to a potential race condition!
@@ -206,9 +206,9 @@ that these objects share most of their memory.
 
 ``` r
 lobstr::obj_size(m$get("a"))
-#> 800,224 B
+#> 800.22 kB
 lobstr::obj_size(list(m$get("a"), m$get("b")))
-#> 800,408 B
+#> 800.41 kB
 ```
 
 However, lobstr is not on CRAN, and if obj_size() were used to find the
@@ -319,7 +319,6 @@ alternative serialization formats like
 
 ``` r
 library(qs)
-#> qs v0.25.3.
 
 d <- cache_disk(read_fn = qs::qread, write_fn = qs::qsave, extension = ".qs")
 
@@ -331,10 +330,10 @@ dir(cachedir)
 d$get("a")
 #> [[1]]
 #> [1] 1
-#> 
+#>
 #> [[2]]
 #> [1] 2
-#> 
+#>
 #> [[3]]
 #> [1] 3
 ```
@@ -345,34 +344,33 @@ d$get("a")
 below. If you want to create a compatible caching object, it must have
 at least the `get()` and `set()` methods:
 
--   `get(key, missing = missing_)`: Get the object associated with
-    `key`. The `missing` parameter allows customized behavior if the key
-    is not present: it actually is an expression which is evaluated when
-    there is a cache miss, and it could return a value or throw an
-    error.
--   `set(key, value)`: Set a key to a value.
--   `exists(key)`: Check whether a particular key exists in the cache.
--   `remove(key)`: Remove a key-value from the cache.
+- `get(key, missing = missing_)`: Get the object associated with `key`.
+  The `missing` parameter allows customized behavior if the key is not
+  present: it actually is an expression which is evaluated when there is
+  a cache miss, and it could return a value or throw an error.
+- `set(key, value)`: Set a key to a value.
+- `exists(key)`: Check whether a particular key exists in the cache.
+- `remove(key)`: Remove a key-value from the cache.
 
 Some optional methods:
 
--   `reset()`: Clear all objects from the cache.
--   `keys()`: Return a character vector of all keys in the cache.
--   `prune()`: Prune the cache. (Some types of caches may not prune on
-    every access, and may temporarily grow past their limits, until the
-    next pruning is triggered automatically, or manually with this
-    function.)
--   `size()`: Return the number of objects in the cache.
--   `size()`: Return the number of objects in the cache.
+- `reset()`: Clear all objects from the cache.
+- `keys()`: Return a character vector of all keys in the cache.
+- `prune()`: Prune the cache. (Some types of caches may not prune on
+  every access, and may temporarily grow past their limits, until the
+  next pruning is triggered automatically, or manually with this
+  function.)
+- `size()`: Return the number of objects in the cache.
+- `size()`: Return the number of objects in the cache.
 
 For these methods:
 
--   `key`: can be any string with lowercase letters, numbers, underscore
-    (`_`) and hyphen (`-`). Some storage backends may not be handle very
-    long keys well. For example, with a `cache_disk()`, the key is used
-    as a filename, and on some filesystems, very filenames may hit
-    limits on path lengths.
--   `value`: can be any R object, with some exceptions noted below.
+- `key`: can be any string with lowercase letters, numbers, underscore
+  (`_`) and hyphen (`-`). Some storage backends may not be handle very
+  long keys well. For example, with a `cache_disk()`, the key is used as
+  a filename, and on some filesystems, very filenames may hit limits on
+  path lengths.
+- `value`: can be any R object, with some exceptions noted below.
 
 #### Limitations of serialized objects
 
@@ -434,10 +432,10 @@ specified by `max_size`. When the size of objects in the cache exceeds
 When objects are pruned from the cache, which ones are removed is
 determined by the eviction policy, `evict`:
 
--   **`lru`**: The least-recently-used objects will be removed from the
-    cache, until it fits within the limit. This is the default and is
-    appropriate for most cases.
--   **`fifo`**: The oldest objects will be removed first.
+- **`lru`**: The least-recently-used objects will be removed from the
+  cache, until it fits within the limit. This is the default and is
+  appropriate for most cases.
+- **`fifo`**: The oldest objects will be removed first.
 
 It is also possible to set the maximum number of items that can be in
 the cache, with `max_n`. By default this is set to `Inf`, or no limit.
