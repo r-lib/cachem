@@ -5,8 +5,8 @@ Description: Key-value stores with automatic pruning. Caches can limit
     either their total size or the age of the oldest object (or both),
     automatically pruning objects to maintain the constraints.
 Authors@R: c(
-    person("Winston", "Chang", , "winston@rstudio.com", c("aut", "cre")),
-    person(family = "RStudio", role = c("cph", "fnd")))
+    person("Winston", "Chang", , "winston@posit.co", c("aut", "cre")),
+    person(family = "Posit Software, PBC", role = c("cph", "fnd")))
 License: MIT + file LICENSE
 Encoding: UTF-8
 ByteCompile: true
