@@ -361,7 +361,6 @@ Some optional methods:
   next pruning is triggered automatically, or manually with this
   function.)
 - `size()`: Return the number of objects in the cache.
-- `size()`: Return the number of objects in the cache.
 
 For these methods:
 
