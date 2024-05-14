@@ -260,3 +260,19 @@ test_that("Pruned objects can be GC'd", {
   expect_true(finalized)
   expect_true(is.key_missing(mc$get("e")))
 })
+
+
+# For https://github.com/r-lib/cachem/issues/47, https://github.com/r-lib/cachem/pull/48/
+test_that("Cache doesn't grow beyond COMPACT_LIMIT", {
+  m <- cache_mem()
+  e <- environment(m$get)
+  n <- e$COMPACT_LIMIT + 1
+  for (i in seq_len(n)) {
+    m$set(as.character(i), i)
+    m$remove(as.character(i))
+  }
+  expect_equal(e$total_n_, 0)
+  # last_idx_ should be reset after we pass the COMPACT_LIMIT, even if there are
+  # no items in the cache. Prior to the fix in #48, it could keep growing.
+  expect_equal(e$last_idx_, 0)
+})
