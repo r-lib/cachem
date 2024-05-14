@@ -138,7 +138,9 @@ cache_mem <- function(
   # ============================================================================
   DEBUG         <- TRUE
   INITIAL_SIZE  <- 64L
-  COMPACT_LIMIT <- 256L
+  # When compacting, how much space should be reserved? For example, if there
+  # are 75 items in the cache when it is compacted and COMPACT_MULT is 2, then
+  # the data store will be compacted to have a capacity of 150 items.
   COMPACT_MULT  <- 2
   # If TRUE, the data will be kept in the correct atime (for lru) or mtime (for
   # fifo) order each time get() or set() is called, though the metadata log will
@@ -519,9 +521,7 @@ cache_mem <- function(
       vapply(keys, remove_one_, TRUE)
     }
 
-    if (last_idx_ > COMPACT_LIMIT  &&  last_idx_ > total_n_ * COMPACT_MULT) {
-      compact_()
-    }
+    compact_()
   }
 
   remove_one_ <- function(key) {
@@ -548,13 +548,17 @@ cache_mem <- function(
   }
 
   compact_ <- function() {
+    if (last_idx_ <= INITIAL_SIZE  ||  last_idx_ <= total_n_ * COMPACT_MULT) {
+      return()
+    }
+
     from_idxs <- key_[seq_len(last_idx_)]
     from_idxs <- !is.na(from_idxs)
     from_idxs <- which(from_idxs)
 
     if (DEBUG) stopifnot(total_n_ == length(from_idxs))
 
-    new_size <- ceiling(total_n_ * COMPACT_MULT)
+    new_size <- max(INITIAL_SIZE, ceiling(total_n_ * COMPACT_MULT))
 
     # Allocate new vectors for metadata.
     new_key_   <- rep_len(NA_character_, new_size)

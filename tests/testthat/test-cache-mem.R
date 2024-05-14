@@ -263,16 +263,29 @@ test_that("Pruned objects can be GC'd", {
 
 
 # For https://github.com/r-lib/cachem/issues/47, https://github.com/r-lib/cachem/pull/48/
-test_that("Cache doesn't grow beyond COMPACT_LIMIT", {
+test_that("Cache doesn't shrink smaller than INITIAL_SIZE", {
+  # This test also makes sure that the cache doesn't keep adding elements to the
+  # storage vectors when there are zero items, then an item is added and
+  # removed, repeatedly.
   m <- cache_mem()
   e <- environment(m$get)
-  n <- e$COMPACT_LIMIT + 1
-  for (i in seq_len(n)) {
+  for (i in seq_len(e$INITIAL_SIZE)) {
     m$set(as.character(i), i)
     m$remove(as.character(i))
   }
   expect_equal(e$total_n_, 0)
-  # last_idx_ should be reset after we pass the COMPACT_LIMIT, even if there are
+  expect_equal(e$last_idx_, e$INITIAL_SIZE)
+  expect_length(e$key_, e$INITIAL_SIZE)
+  expect_length(e$value_, e$INITIAL_SIZE)
+
+  # Adding one more item should trigger a compact_()
+  m$set("a", 1)
+  m$remove("a")
+
+  expect_equal(e$total_n_, 0)
+  # last_idx_ should be reset after we pass the INITIAL_SIZE, even if there are
   # no items in the cache. Prior to the fix in #48, it could keep growing.
   expect_equal(e$last_idx_, 0)
+  expect_length(e$key_, e$INITIAL_SIZE)
+  expect_length(e$value_, e$INITIAL_SIZE)
 })
