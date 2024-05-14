@@ -13,7 +13,7 @@ ByteCompile: true
 URL: https://cachem.r-lib.org/, https://github.com/r-lib/cachem
 Imports:
     rlang,
-    fastmap (>= 1.1.1)
+    fastmap (>= 1.1.1.9001)
 Suggests:
     testthat
 RoxygenNote: 7.2.3

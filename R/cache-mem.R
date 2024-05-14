@@ -554,11 +554,6 @@ cache_mem <- function(
 
     if (DEBUG) stopifnot(total_n_ == length(from_idxs))
 
-    if (total_n_ == 0L) {
-      message("nothing to compact")
-      return()
-    }
-
     new_size <- ceiling(total_n_ * COMPACT_MULT)
 
     # Allocate new vectors for metadata.
