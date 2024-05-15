@@ -1,4 +1,4 @@
-# cachem 1.0.8.9000
+# cachem 1.1.0
 
 * Fixed #47: In some cases, with a `cache_mem`, removing an item could result in the spurious message "nothing to compact" being printed out. (#48)
 
