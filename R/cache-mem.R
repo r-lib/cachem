@@ -98,6 +98,10 @@
 #'       Removes `key` from the cache, if it exists in the cache. If the key is
 #'       not in the cache, this does nothing.
 #'     }
+#'     \item{`ttl(key)`}{
+#'       Returns the time to live (seconds), using the parameters specified by
+#'       `max_age`.
+#'     }
 #'     \item{`size()`}{
 #'       Returns the number of items currently in the cache.
 #'     }
@@ -468,6 +472,16 @@ cache_mem <- function(
     )
   }
 
+  ttl <- function(key) {
+    validate_key(key)
+    if (PRUNE_BY_AGE) {
+      idx <- key_idx_map_$get(key)
+      time <- as.numeric(Sys.time())
+      age <- (mtime_[idx] + max_age_) - time
+      if (!isTRUE(age > 0)) age <- NA_real_
+      age
+    } else Inf
+  }
 
   # ============================================================================
   # Private methods
@@ -637,6 +651,7 @@ cache_mem <- function(
       exists = exists,
       keys = keys,
       remove = remove,
+      ttl = ttl,
       reset = reset,
       prune = prune,
       size = size,

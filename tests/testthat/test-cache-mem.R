@@ -222,6 +222,31 @@ test_that("Pruning by max_age", {
   expect_identical(d$size(), 1L)
 })
 
+test_that("TTL", {
+  skip_on_cran()
+
+  # positive ttl
+  d <- cache_mem(max_age = 0.25*time_factor)
+  d$set("a", 1)
+  expect_identical(d$size(), 1L)
+  Sys.sleep(0.15*time_factor)
+  expect_true(d$ttl("a") > 0)
+
+  # after expiration, converts to NA
+  d <- cache_mem(max_age = 0.25*time_factor)
+  d$set("a", 1)
+  expect_identical(d$size(), 1L)
+  Sys.sleep(0.3*time_factor)
+  expect_identical(d$ttl("a"), NA_real_)
+
+  # no-limit returns Inf
+  d <- cache_mem()
+  d$set("a", 1)
+  expect_identical(d$size(), 1L)
+  Sys.sleep(0.15*time_factor)
+  expect_identical(d$ttl("a"), Inf)
+})
+
 test_that("Removed objects can be GC'd", {
   mc <- cache_mem()
   e <- new.env()

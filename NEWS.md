@@ -9,6 +9,7 @@
 # cachem 1.0.7
 
 * `cache_disk()` gains a `read_fn`, `write_fn` and `extension` arguments, to allow specifying custom formats for serializing object to disk. (@jimhester)
+* `cache_mem()` and `cache_disk()` gain a `$ttl()` method to determine the remaining life of a key with optional expiration (#34, @r2evans)
 
 # cachem 1.0.6
 
